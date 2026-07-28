@@ -1,0 +1,43 @@
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from fda_device_rag.chunking.sections import detect_sections
+from fda_device_rag.models import Chunk, ChunkMetadata
+
+CHUNK_SIZE_CHARS = 1600
+CHUNK_OVERLAP_CHARS = 240
+
+
+def chunk_pdf_text(
+    text: str,
+    source_type: str,
+    source_url: str,
+    document_title: str,
+    retrieved_date: str,
+    id_prefix: str,
+) -> list[Chunk]:
+    sections = detect_sections(text)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE_CHARS,
+        chunk_overlap=CHUNK_OVERLAP_CHARS,
+    )
+
+    chunks: list[Chunk] = []
+    for section in sections:
+        if len(section.body) <= CHUNK_SIZE_CHARS:
+            pieces = [section.body]
+        else:
+            pieces = splitter.split_text(section.body)
+
+        for piece in pieces:
+            index = len(chunks)
+            metadata = ChunkMetadata(
+                source_type=source_type,
+                source_url=source_url,
+                document_title=document_title,
+                section_name=section.heading,
+                record_id=None,
+                retrieved_date=retrieved_date,
+            )
+            chunks.append(Chunk(id=f"{id_prefix}-{index}", text=piece, metadata=metadata))
+
+    return chunks
