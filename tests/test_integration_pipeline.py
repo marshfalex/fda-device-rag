@@ -5,19 +5,30 @@ from fda_device_rag.retrieval.bm25_index import BM25Index
 from fda_device_rag.retrieval.hybrid_retriever import HybridRetriever
 
 
+_KEYWORDS = ("battery", "overheat", "firmware", "pacemaker")
+
+
 class _StubEmbedder:
-    """Fixed, content-independent vector for every document and query. It
-    exists only to exercise the Chroma write/read/reconstruction path; it
-    carries no real semantic signal, so which chunk wins this test's
-    assertion is decided by BM25/RRF, not by this stub. (An earlier version
-    hashed each text into a distinct vector, but under RRF's rank-only
-    fusion even that "meaningless" per-text noise had enough weight to
-    occasionally outvote a decisive BM25 winner in a 3-chunk corpus - so
-    the stub is intentionally uninformative instead.) Real embedding
-    quality is validated separately by the Phase 2 benchmark."""
+    """Deterministic, content-based (if simplistic) embedding: a 4-dim vector
+    where each dimension is 1.0 if the corresponding keyword in _KEYWORDS
+    appears (case-insensitive substring match) in the text, else 0.0. Both
+    embed_documents and embed_query go through the same _vector method, so
+    the query and recall_chunk's text land on the identical [1,1,1,1] point
+    while the other two chunks (which share none of these keywords) land on
+    [0,0,0,0] - genuinely and unambiguously closer to the query by cosine
+    similarity, not a hash and not a constant tie-break.
+
+    This means the dense leg now carries real signal: the test's top_k=1
+    pass reflects actual hybrid retrieval fusion (dense + BM25 agreeing on
+    recall-1), not an arbitrary insertion-order tie-break in Chroma/hnswlib.
+    (Confirmed by simulation: reordering the `chunks` list below does not
+    change the winner - see the corpus-reorder check in the task report.)
+    Real embedding quality is validated separately by the Phase 2 benchmark.
+    """
 
     def _vector(self, text: str) -> list[float]:
-        return [0.5, 0.5, 0.5, 0.5]
+        lowered = text.lower()
+        return [1.0 if kw in lowered else 0.0 for kw in _KEYWORDS]
 
     def embed_documents(self, texts):
         return [self._vector(t) for t in texts]
@@ -47,9 +58,10 @@ def test_pipeline_retrieves_recall_chunk_for_matching_query(tmp_path):
         id_prefix="guidance-1",
     )
 
-    # recall_chunk must stay first: with the stub embedder's tied vectors,
-    # Chroma breaks the tie by insertion order, so this keeps the dense side
-    # from ever disagreeing with BM25's real-signal winner (recall-1).
+    # Order is irrelevant here: recall_chunk is the only chunk whose text
+    # contains all four _StubEmbedder keywords, so it is the unique nearest
+    # neighbor by cosine similarity regardless of insertion order (verified
+    # by re-running this test with event_chunk listed first).
     chunks = [
         recall_to_chunk(recall_record, retrieved_date="2026-07-28"),
         event_to_chunk(event_record, retrieved_date="2026-07-28"),
