@@ -51,3 +51,21 @@ def test_detect_sections_drops_empty_sections():
 
     assert len(sections) == 1
     assert sections[0].heading == "HEADING TWO"
+
+
+def test_detect_sections_splits_on_multi_level_numbered_headings():
+    text = (
+        "2.1.4 RISKS OF USE\n"
+        "Potential adverse reactions may occur.\n"
+        "Always follow precautions.\n"
+        "2.2 CONTRAINDICATIONS\n"
+        "Do not use in patients with severe conditions.\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 2
+    assert sections[0].heading == "2.1.4 RISKS OF USE"
+    assert "adverse reactions" in sections[0].body
+    assert sections[1].heading == "2.2 CONTRAINDICATIONS"
+    assert "severe conditions" in sections[1].body

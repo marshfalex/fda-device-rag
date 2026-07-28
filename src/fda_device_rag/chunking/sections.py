@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-HEADING_PATTERN = re.compile(r"^(?:\d+\.\s+)?([A-Z][A-Z0-9 ,\-/:]{2,80})$")
+HEADING_PATTERN = re.compile(r"^(?:\d+(?:\.\d+)*\.?\s+)?([A-Z][A-Z0-9 ,\-/:]{2,80})$")
 
 
 @dataclass
