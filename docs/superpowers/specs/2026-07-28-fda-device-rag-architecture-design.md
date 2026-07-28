@@ -108,15 +108,23 @@ per-strategy ablation (§6).
 **LLM: llama3 (local, via Ollama), selected on measured latency, not a
 leaderboard.** gemma4:12b scores better on published instruction-following/
 hallucination benchmarks, but the deciding factor was a real latency pass on
-target hardware: llama3 measured ~4 min cold load (one-time) then 18.1s
-average per grounded answer once warm (range 2.9–32.2s, tested with a
-~1800-token context prompt matching real RAG-call size) — clearing the <20s
-live-demo bar. This measured-latency methodology is documented in the README
-as the actual selection criterion.
+target hardware: llama3 measured 11.4s cold load (one-time) then 3.1s
+average per grounded answer once warm (4 runs, range 2.8–3.3s, tested with a
+~1800-token context prompt matching real RAG-call size) — comfortably
+clearing the <20s live-demo bar. The first pass (run while a second model was
+downloading in the background, contending for disk/CPU/bandwidth) had
+inflated both figures to ~4 min cold load and 18.1s warm average; this is the
+clean re-measurement with no competing processes. That "measured with nothing
+else running" condition is documented as part of the methodology itself, not
+a footnote — it's what makes the number trustworthy. This measured-latency
+methodology is documented in the README as the actual selection criterion.
 
 **Operational note (demo-day):** Ollama unloads an idle model from memory
-after 5 minutes by default, which would re-trigger the 4-minute cold load
-mid-demo. Mitigation: pass `"keep_alive": "30m"` in the API call (or set
+after 5 minutes by default, which would re-trigger the (now minor, ~11s)
+cold load mid-demo. `keep_alive` and a warm-up request are still good
+practice regardless — the 5-minute idle-unload behavior is real — but this
+is a minor smoothing step, not mitigation of a scary multi-minute risk.
+Mitigation: pass `"keep_alive": "30m"` in the API call (or set
 `OLLAMA_KEEP_ALIVE`), and send a throwaway warm-up request about a minute
 before demoing. Documented in deployment/demo instructions, not just in code.
 
@@ -252,8 +260,9 @@ within the 4-6 week budget. UI surfaces: question input, generated answer,
 per §5), and source metadata/links per citation.
 
 Demo-day operational note from §5 (Ollama keep_alive + warm-up request)
-documented explicitly in deployment/demo instructions, since it's a real
-failure mode for a live walkthrough, not just a code concern.
+documented explicitly in deployment/demo instructions — a minor smoothing
+step for a live walkthrough (avoids an ~11s idle-reload pause), not a
+mitigation for a significant risk.
 
 ## 8. Testing & CI
 
