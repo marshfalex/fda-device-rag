@@ -1,1 +1,10 @@
 .worktrees/
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/raw/
+data/chroma/
+data/manifest.csv
+*.egg-info/
+.pytest_cache/
