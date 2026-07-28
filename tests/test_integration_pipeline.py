@@ -6,13 +6,18 @@ from fda_device_rag.retrieval.hybrid_retriever import HybridRetriever
 
 
 class _StubEmbedder:
-    """Deterministic pseudo-embedding: hashes text into a fixed-size vector.
-    Only used to prove the pipeline wiring works end-to-end; real embedding
+    """Fixed, content-independent vector for every document and query. It
+    exists only to exercise the Chroma write/read/reconstruction path; it
+    carries no real semantic signal, so which chunk wins this test's
+    assertion is decided by BM25/RRF, not by this stub. (An earlier version
+    hashed each text into a distinct vector, but under RRF's rank-only
+    fusion even that "meaningless" per-text noise had enough weight to
+    occasionally outvote a decisive BM25 winner in a 3-chunk corpus - so
+    the stub is intentionally uninformative instead.) Real embedding
     quality is validated separately by the Phase 2 benchmark."""
 
     def _vector(self, text: str) -> list[float]:
-        h = hash(text)
-        return [((h >> (8 * i)) % 256) / 255.0 for i in range(4)]
+        return [0.5, 0.5, 0.5, 0.5]
 
     def embed_documents(self, texts):
         return [self._vector(t) for t in texts]
@@ -42,6 +47,9 @@ def test_pipeline_retrieves_recall_chunk_for_matching_query(tmp_path):
         id_prefix="guidance-1",
     )
 
+    # recall_chunk must stay first: with the stub embedder's tied vectors,
+    # Chroma breaks the tie by insertion order, so this keeps the dense side
+    # from ever disagreeing with BM25's real-signal winner (recall-1).
     chunks = [
         recall_to_chunk(recall_record, retrieved_date="2026-07-28"),
         event_to_chunk(event_record, retrieved_date="2026-07-28"),
@@ -54,6 +62,6 @@ def test_pipeline_retrieves_recall_chunk_for_matching_query(tmp_path):
     bm25 = BM25Index(chunks)
     retriever = HybridRetriever(dense_store=store, bm25_index=bm25, embedder=embedder)
 
-    results = retriever.retrieve("battery overheat pacemaker firmware update", top_k=3)
+    results = retriever.retrieve("battery overheat pacemaker firmware update", top_k=1)
 
-    assert any(r.id == "recall-1" for r in results)
+    assert results[0].id == "recall-1"
