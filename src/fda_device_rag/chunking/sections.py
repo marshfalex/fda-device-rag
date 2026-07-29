@@ -1,7 +1,11 @@
 import re
 from dataclasses import dataclass
 
-HEADING_PATTERN = re.compile(r"^(?:\d+(?:\.\d+)*\.?\s+)?([A-Z][A-Z0-9 ,\-/:]{2,80})$")
+NUMBERED_PREFIX = re.compile(r"^\d+(?:(?:\.\d+)+\.?|\.)\s+")
+ALLCAPS_BODY = re.compile(r"^[A-Z][A-Z0-9 ,\-/:]{2,80}$")
+MASTHEAD_TOKEN = re.compile(r"^[A-Z]{2,6}$")
+MIN_ALPHA_TOKEN_LEN = 3
+MAX_TITLE_WORDS = 8
 
 
 @dataclass
@@ -10,9 +14,58 @@ class Section:
     body: str
 
 
-def _is_heading(line: str) -> bool:
+def _has_real_word(body: str) -> bool:
+    for token in body.split():
+        cleaned = token.rstrip(":,.;")
+        if len(cleaned) >= MIN_ALPHA_TOKEN_LEN and cleaned.isalpha():
+            return True
+    return False
+
+
+def _is_title_case(body: str) -> bool:
+    words = body.rstrip(":").split()
+    if not words or len(words) > MAX_TITLE_WORDS:
+        return False
+    has_long_word = False
+    for word in words:
+        cleaned = word.strip(",")
+        if not cleaned or not cleaned[0].isalpha():
+            return False
+        if len(cleaned) <= 3:
+            continue
+        if not cleaned[0].isupper():
+            return False
+        has_long_word = True
+    return has_long_word
+
+
+def _classify(line: str, seen_real_heading: bool) -> tuple[bool, bool]:
+    """Returns (is_heading, updated_seen_real_heading)."""
     stripped = line.strip()
-    return bool(stripped) and len(stripped) <= 80 and bool(HEADING_PATTERN.match(stripped))
+    if not stripped or len(stripped) > 80 or stripped.endswith("."):
+        return False, seen_real_heading
+
+    prefix_match = NUMBERED_PREFIX.match(stripped)
+    body = stripped[prefix_match.end():] if prefix_match else stripped
+
+    is_allcaps = bool(ALLCAPS_BODY.match(body))
+    is_title = _is_title_case(body) if not is_allcaps else False
+
+    if not (is_allcaps or is_title):
+        return False, seen_real_heading
+    if not _has_real_word(body):
+        return False, seen_real_heading
+
+    is_masthead_candidate = (
+        not prefix_match
+        and is_allcaps
+        and " " not in body
+        and bool(MASTHEAD_TOKEN.match(body))
+    )
+    if is_masthead_candidate and not seen_real_heading:
+        return False, seen_real_heading
+
+    return True, True
 
 
 def detect_sections(text: str) -> list[Section]:
@@ -20,9 +73,11 @@ def detect_sections(text: str) -> list[Section]:
     sections: list[Section] = []
     current_heading = "Document"
     current_body_lines: list[str] = []
+    seen_real_heading = False
 
     for line in lines:
-        if _is_heading(line):
+        is_heading, seen_real_heading = _classify(line, seen_real_heading)
+        if is_heading:
             if current_body_lines:
                 sections.append(Section(current_heading, "\n".join(current_body_lines).strip()))
             current_heading = line.strip()

@@ -110,3 +110,110 @@ def test_detect_sections_splits_on_multi_level_numbered_headings():
     assert "adverse reactions" in sections[0].body
     assert sections[1].heading == "2.2 CONTRAINDICATIONS"
     assert "severe conditions" in sections[1].body
+
+
+def test_detect_sections_detects_title_case_headings():
+    text = (
+        "Preface\n"
+        "This section provides background context for readers\n"
+        "Table of Contents\n"
+        "See the following pages for a full listing of sections\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 2
+    assert sections[0].heading == "Preface"
+    assert "background context" in sections[0].body
+    assert sections[1].heading == "Table of Contents"
+    assert "full listing" in sections[1].body
+
+
+def test_detect_sections_does_not_treat_prose_as_title_case_heading():
+    text = (
+        "WARNINGS\n"
+        "This document provides guidance for reviewers\n"
+        "and covers additional safety considerations\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 1
+    assert sections[0].heading == "WARNINGS"
+    assert "provides guidance for reviewers" in sections[0].body
+
+
+def test_detect_sections_rejects_catalog_code_rows_as_headings():
+    text = (
+        "ACCESSORIES\n"
+        "F120 F180 F275 F420 F500\n"
+        "Compatible tubing sets are listed above\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 1
+    assert sections[0].heading == "ACCESSORIES"
+    assert "F120 F180 F275 F420 F500" in sections[0].body
+
+
+def test_detect_sections_rejects_lines_ending_in_period_as_headings():
+    text = (
+        "MAINTENANCE\n"
+        "Clean the exterior\n"
+        "Pump.\n"
+        "Store in a cool location\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 1
+    assert sections[0].heading == "MAINTENANCE"
+    assert "Pump." in sections[0].body
+
+
+def test_detect_sections_rejects_numbered_list_items_as_headings():
+    text = (
+        "1. Introduction\n"
+        "This is the intro paragraph\n"
+        "5. Close the Roller Clamp and the Pinch Clamp.\n"
+        "Continue with the next step\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 1
+    assert sections[0].heading == "1. Introduction"
+    assert "5. Close the Roller Clamp and the Pinch Clamp." in sections[0].body
+
+
+def test_detect_sections_does_not_treat_bare_page_number_as_numbered_heading():
+    text = (
+        "WARNINGS\n"
+        "First warning content\n"
+        "10 Device Manual Footer\n"
+        "More warning content continues here\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 1
+    assert sections[0].heading == "WARNINGS"
+    assert "10 Device Manual Footer" in sections[0].body
+
+
+def test_detect_sections_suppresses_masthead_acronym_before_first_real_heading_but_not_after():
+    text = (
+        "CBER\n"
+        "Cover page contact information here for reference\n"
+        "PRODUCT OVERVIEW\n"
+        "This section describes the product in detail here\n"
+        "FLANGE\n"
+        "Attach the flange to the connector body here\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert [s.heading for s in sections] == ["Document", "PRODUCT OVERVIEW", "FLANGE"]
+    assert "CBER" in sections[0].body
+    assert "Attach the flange" in sections[2].body
