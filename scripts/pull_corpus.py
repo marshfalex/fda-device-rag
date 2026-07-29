@@ -22,10 +22,26 @@ from fda_device_rag.ingestion.openfda_client import fetch_recalls, fetch_events
 from fda_device_rag.ingestion.manifest import ManifestEntry, ManifestWriter
 from fda_device_rag.ingestion.pdf_fetch import download_pdfs
 
-# Hand-curated, defensible list -- each URL was chosen and verified by hand,
-# not scraped. Fill in with real guidance/IFU PDF URLs before running.
-GUIDANCE_PDF_URLS: list[str] = []
-IFU_PDF_URLS: list[str] = []
+# Hand-curated, defensible list -- each URL was chosen and verified live
+# (HTTP 200, application/pdf) by hand before being added here, not scraped.
+GUIDANCE_PDF_URLS: list[str] = [
+    # Infusion Pumps Total Product Life Cycle
+    "https://www.fda.gov/media/78369/download",
+    # General Principles of Software Validation
+    "https://www.fda.gov/media/73141/download",
+    # Computer Software Assurance for Production and Quality System Software
+    "https://www.fda.gov/media/188844/download",
+    # Content of Premarket Submissions for Device Software Functions
+    "https://www.fda.gov/media/153781/download",
+]
+IFU_PDF_URLS: list[str] = [
+    # InfuSystem Z-800F pole-mounted infusion pump
+    "https://infusystem.com/images/catalog_manuals/English/Pole_Mounted_Pump_Manuals/Z-800F_Instructions_for_Use_Rev_O.pdf",
+    # Intera Oncology Intera 3000 hepatic artery infusion pump
+    "https://www.interaoncology.com/downloads/intera-3000-pump/intera-3000-pump-ifu.pdf",
+    # Koru Medical FreedomEdge subcutaneous infusion pump
+    "https://korumedical.com/ifu-files/FreedomEDGE-US-EN/FreedomEdge_Domestic_IFU_347201_Rev_B.pdf",
+]
 
 DATA_DIR = Path("data/raw")
 MANIFEST_PATH = Path("data/manifest.csv")
