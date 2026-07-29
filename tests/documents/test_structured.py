@@ -64,6 +64,32 @@ def test_recall_to_chunk_returns_none_when_narrative_fields_missing():
     assert recall_to_chunk({"product_res_number": "Z-0009-04"}, retrieved_date="2026-07-28") is None
 
 
+def test_recall_to_chunk_returns_none_when_product_res_number_missing():
+    """A chunk needs a valid id to be indexed at all -- a missing/empty
+    product_res_number would otherwise silently produce record_id="" and
+    Chunk.id == "recall-", colliding with any other such record (the same
+    failure class as the original duplicate-id finding, via a different
+    missing field)."""
+    record = {
+        "reason_for_recall": "Battery defect causing overheating.",
+        "action": "Field safety notice issued.",
+        "product_description": "Portable Infusion Pump Model Z",
+    }
+
+    assert recall_to_chunk(record, retrieved_date="2026-07-28") is None
+
+
+def test_recall_to_chunk_returns_none_when_product_res_number_blank():
+    record = {
+        "product_res_number": "",
+        "reason_for_recall": "Battery defect causing overheating.",
+        "action": "Field safety notice issued.",
+        "product_description": "Portable Infusion Pump Model Z",
+    }
+
+    assert recall_to_chunk(record, retrieved_date="2026-07-28") is None
+
+
 def test_recall_to_chunk_kept_when_only_one_narrative_field_present():
     record = {"product_res_number": "Z-0010-04", "reason_for_recall": "Battery defect."}
 

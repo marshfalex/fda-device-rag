@@ -35,11 +35,16 @@ retrieve. See §2 of the design doc.
 (`event_date_posted:[2015-01-01 TO 2024-12-31]` for recalls,
 `date_received:[20150101 TO 20241231]` for MAUDE events) and paginates to a hard
 cap of 500 records per endpoint. The exact queries and record counts are printed
-at the end of every run. Same query + same underlying FDA data = same result
-set; the recorded pull date is what "as of" refers to, since FDA can add records
-to a historical range after the fact. Embeddings are computed locally
-(`BAAI/bge-small-en-v1.5` via `sentence-transformers`), so re-running the
-pipeline requires no API key and costs nothing.
+at the end of every run. The same query and date range will match the same
+underlying records (subject to FDA updating historical data), and the record
+count is capped consistently; exact record-level ordering across repeated pulls
+isn't pinned without an explicit `sort` parameter, which is a known follow-up
+(the pager dedups across pages by natural identifier so a mid-pull ordering
+shift can't produce duplicate ids). The recorded pull date is what "as of"
+refers to, since FDA can add records to a historical range after the fact.
+Embeddings are computed locally (`BAAI/bge-small-en-v1.5` via
+`sentence-transformers`), so re-running the pipeline requires no API key and
+costs nothing.
 
 **Corpus stats:** run the pipeline below to populate `data/manifest.csv`; counts
 will be logged by `pull_corpus.py` on completion.
@@ -87,8 +92,11 @@ pytest
 ```
 
 The operator scripts (`pull_corpus.py`, `build_index.py`, `query.py`) are
-deliberately untested — they are thin network/IO wrappers over the library code
-in `src/fda_device_rag/`, which is where the test coverage lives.
+otherwise deliberately untested — they are thin network/IO wrappers over the
+library code in `src/fda_device_rag/`, which is where most test coverage
+lives. The one exception is `pull_corpus.py`'s `_fetch_paginated` cross-page
+dedup logic (`tests/test_pull_corpus.py`), which is plain enough logic to be
+worth pinning directly.
 
 ## Roadmap
 

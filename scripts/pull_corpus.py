@@ -3,9 +3,14 @@
 data/raw/, logging every source to data/manifest.csv.
 
 The openFDA pull uses a fixed, explicit date-range query and paginates to a
-hard record cap, so the same command produces the same result set against the
-same underlying FDA data. (The pull date recorded in the manifest is what
-"as of" refers to -- FDA can and does add records to historical ranges.)
+hard record cap: the same query and date range will match the same underlying
+records (subject to FDA updating historical data), and the record count is
+capped consistently. Exact record-level ordering across repeated pulls isn't
+pinned without an explicit `sort` parameter -- a known follow-up -- so
+`_fetch_paginated` dedups by natural identifier across pages to guard against
+the same record appearing on two pages if ordering shifts between requests.
+(The pull date recorded in the manifest is what "as of" refers to -- FDA can
+and does add records to historical ranges.)
 
 Usage: python scripts/pull_corpus.py
 """
@@ -38,14 +43,27 @@ PAGE_SIZE = 100
 MAX_RECORDS = 500
 
 
-def _fetch_paginated(fetch_fn, search: str, max_records: int = MAX_RECORDS) -> list[dict]:
-    """Page through an openFDA endpoint in PAGE_SIZE increments up to a hard cap."""
+def _fetch_paginated(fetch_fn, search: str, id_field: str, max_records: int = MAX_RECORDS) -> list[dict]:
+    """Page through an openFDA endpoint in PAGE_SIZE increments up to a hard cap.
+
+    openFDA's result ordering isn't pinned by an explicit ``sort`` parameter, so
+    if ordering shifts between requests, the same record could land on two
+    pages. Dedup across pages by ``id_field`` (the record's natural identifier)
+    so a shifted-ordering re-fetch can't produce duplicate ids in the same
+    ``add_chunks``/``BM25Index`` build call.
+    """
     records: list[dict] = []
+    seen: set[str] = set()
     for skip in range(0, max_records, PAGE_SIZE):
         page = fetch_fn(search=search, limit=PAGE_SIZE, skip=skip)
         if not page:
             break
-        records.extend(page)
+        for record in page:
+            identifier = record.get(id_field)
+            if identifier in seen:
+                continue
+            seen.add(identifier)
+            records.append(record)
         if len(page) < PAGE_SIZE:
             break
     return records[:max_records]
@@ -56,14 +74,14 @@ def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     manifest = ManifestWriter(MANIFEST_PATH)
 
-    recalls = _fetch_paginated(fetch_recalls, RECALL_SEARCH)
+    recalls = _fetch_paginated(fetch_recalls, RECALL_SEARCH, id_field="product_res_number")
     (DATA_DIR / "recalls.json").write_text(json.dumps(recalls))
     for r in recalls:
         # product_res_number, not res_event_number: one recall event covers many
         # product records, so res_event_number is not unique per record.
         manifest.write(ManifestEntry("recall", str(r.get("product_res_number", "")), "openfda:device/recall", retrieved_date))
 
-    events = _fetch_paginated(fetch_events, EVENT_SEARCH)
+    events = _fetch_paginated(fetch_events, EVENT_SEARCH, id_field="report_number")
     (DATA_DIR / "events.json").write_text(json.dumps(events))
     for e in events:
         manifest.write(ManifestEntry("maude_event", str(e.get("report_number", "")), "openfda:device/event", retrieved_date))

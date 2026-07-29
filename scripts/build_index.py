@@ -70,7 +70,21 @@ def main() -> None:
     # the scripts out of order costs a slow download just to fail on an empty
     # embed/BM25 call.
     if not chunks:
-        print(f"No corpus data found in {DATA_DIR.as_posix()}/ -- run scripts/pull_corpus.py first.")
+        raw_sources_exist = (
+            recalls_path.exists()
+            or events_path.exists()
+            or (DATA_DIR / "guidance_pdfs").exists()
+            or (DATA_DIR / "ifu_pdfs").exists()
+        )
+        if raw_sources_exist:
+            # Source files exist but every record was filtered out (Fix 8's
+            # content-free-record skipping, or empty curated PDF lists) --
+            # distinct from "corpus never pulled", which would print below.
+            print(f"Found source files in {DATA_DIR.as_posix()}/, but zero chunks were "
+                  f"produced (all records may lack narrative content, or PDF lists are "
+                  f"empty) -- check your data or curated PDF URL lists.")
+        else:
+            print(f"No corpus data found in {DATA_DIR.as_posix()}/ -- run scripts/pull_corpus.py first.")
         return
 
     embedder = Embedder()

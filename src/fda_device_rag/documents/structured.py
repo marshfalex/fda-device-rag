@@ -6,6 +6,10 @@ def recall_to_chunk(record: dict, retrieved_date: str) -> Chunk | None:
 
     Returns None for content-free records (no reason, action, or product
     description), which would otherwise be indexed as scaffolding-only text.
+    Also returns None when ``product_res_number`` is missing or empty, since
+    a chunk needs a valid id to be indexed at all -- otherwise every such
+    record would collide on ``Chunk.id == "recall-"``, crashing the build the
+    same way duplicate ids did before Fix 1.
 
     Keyed on ``product_res_number``, not ``res_event_number``: one recall event
     can cover many product records, so ``res_event_number`` is many-to-one with
@@ -19,9 +23,11 @@ def recall_to_chunk(record: dict, retrieved_date: str) -> Chunk | None:
     if not (reason or action or product):
         return None
 
-    text = f"Recall reason: {reason}\nAction taken: {action}\nProduct: {product}"
+    record_id = str(record.get("product_res_number", "") or "")
+    if not record_id:
+        return None
 
-    record_id = str(record.get("product_res_number", ""))
+    text = f"Recall reason: {reason}\nAction taken: {action}\nProduct: {product}"
     metadata = ChunkMetadata(
         source_type="recall",
         # %22 wraps the id in quotes for an exact-phrase match. openFDA tokenizes
