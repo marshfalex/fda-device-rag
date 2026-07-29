@@ -5,6 +5,7 @@ from fda_device_rag.models import Chunk, ChunkMetadata
 
 CHUNK_SIZE_CHARS = 1600
 CHUNK_OVERLAP_CHARS = 240
+MIN_CHUNK_CHARS = 40
 
 
 def chunk_pdf_text(
@@ -29,6 +30,9 @@ def chunk_pdf_text(
             pieces = splitter.split_text(section.body)
 
         for piece in pieces:
+            if len(piece) < MIN_CHUNK_CHARS:
+                continue
+
             index = len(chunks)
             metadata = ChunkMetadata(
                 source_type=source_type,

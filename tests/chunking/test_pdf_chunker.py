@@ -54,3 +54,39 @@ def test_chunk_pdf_text_handles_no_headings():
 
     assert len(chunks) == 1
     assert chunks[0].metadata.section_name == "Document"
+
+
+def test_chunk_pdf_text_drops_chunks_under_min_length():
+    text = "MAINTENANCE\nOK\nWARNINGS\nDo not operate this device while it is still charging today.\n"
+
+    chunks = chunk_pdf_text(
+        text,
+        source_type="ifu_pdf",
+        source_url="https://example.com/ifu-2.pdf",
+        document_title="Example IFU 2",
+        retrieved_date="2026-07-28",
+        id_prefix="ifu-2",
+    )
+
+    assert len(chunks) == 1
+    assert chunks[0].metadata.section_name == "WARNINGS"
+    assert "Do not operate" in chunks[0].text
+    assert chunks[0].id == "ifu-2-0"
+
+
+def test_chunk_pdf_text_keeps_chunk_at_exactly_min_length_boundary():
+    exactly_40_chars = "x" * 40
+    assert len(exactly_40_chars) == 40
+    text = f"WARNINGS\n{exactly_40_chars}\n"
+
+    chunks = chunk_pdf_text(
+        text,
+        source_type="ifu_pdf",
+        source_url="https://example.com/ifu-3.pdf",
+        document_title="Example IFU 3",
+        retrieved_date="2026-07-28",
+        id_prefix="ifu-3",
+    )
+
+    assert len(chunks) == 1
+    assert chunks[0].text == exactly_40_chars
