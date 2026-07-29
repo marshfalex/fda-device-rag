@@ -6,5 +6,6 @@ venv/
 data/raw/
 data/chroma/
 data/manifest.csv
+data/bm25_index.pkl
 *.egg-info/
 .pytest_cache/

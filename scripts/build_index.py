@@ -18,20 +18,37 @@ from fda_device_rag.retrieval.bm25_index import BM25Index
 DATA_DIR = Path("data/raw")
 CHROMA_DIR = Path("data/chroma")
 BM25_INDEX_PATH = Path("data/bm25_index.pkl")
+PULL_DATE_PATH = DATA_DIR / "pull_date.txt"
+
+
+def _read_pull_date() -> str:
+    """The pull date written by pull_corpus.py, carried into chunk metadata for
+    citations. Degrades to "" (with a warning) rather than crashing, so the
+    script still runs against manually-placed data in data/raw/."""
+    if PULL_DATE_PATH.exists():
+        return PULL_DATE_PATH.read_text().strip()
+    print(f"WARNING: {PULL_DATE_PATH.as_posix()} not found -- indexing with an empty "
+          f"retrieved_date. Run scripts/pull_corpus.py to record the pull date.")
+    return ""
 
 
 def main() -> None:
+    retrieved_date = _read_pull_date()
     chunks = []
 
     recalls_path = DATA_DIR / "recalls.json"
     if recalls_path.exists():
         for record in json.loads(recalls_path.read_text()):
-            chunks.append(recall_to_chunk(record, retrieved_date=""))
+            chunk = recall_to_chunk(record, retrieved_date=retrieved_date)
+            if chunk is not None:
+                chunks.append(chunk)
 
     events_path = DATA_DIR / "events.json"
     if events_path.exists():
         for record in json.loads(events_path.read_text()):
-            chunks.append(event_to_chunk(record, retrieved_date=""))
+            chunk = event_to_chunk(record, retrieved_date=retrieved_date)
+            if chunk is not None:
+                chunks.append(chunk)
 
     for pdf_dir, source_type in [(DATA_DIR / "guidance_pdfs", "guidance_pdf"), (DATA_DIR / "ifu_pdfs", "ifu_pdf")]:
         if not pdf_dir.exists():
@@ -44,10 +61,17 @@ def main() -> None:
                     source_type=source_type,
                     source_url=str(pdf_path),
                     document_title=pdf_path.stem,
-                    retrieved_date="",
+                    retrieved_date=retrieved_date,
                     id_prefix=pdf_path.stem,
                 )
             )
+
+    # Guard before Embedder(), which loads a ~130MB model -- otherwise running
+    # the scripts out of order costs a slow download just to fail on an empty
+    # embed/BM25 call.
+    if not chunks:
+        print(f"No corpus data found in {DATA_DIR.as_posix()}/ -- run scripts/pull_corpus.py first.")
+        return
 
     embedder = Embedder()
     embeddings = embedder.embed_documents([c.text for c in chunks])
@@ -56,9 +80,11 @@ def main() -> None:
     store.add_chunks(chunks, embeddings)
 
     bm25 = BM25Index(chunks)
+    BM25_INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
     BM25_INDEX_PATH.write_bytes(pickle.dumps(bm25))
 
-    print(f"Indexed {len(chunks)} chunks into {CHROMA_DIR} and {BM25_INDEX_PATH}.")
+    print(f"Indexed {len(chunks)} chunks (retrieved_date={retrieved_date or 'unset'}) "
+          f"into {CHROMA_DIR} and {BM25_INDEX_PATH}.")
 
 
 if __name__ == "__main__":

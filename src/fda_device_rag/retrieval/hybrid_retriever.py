@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from fda_device_rag.models import ScoredChunk
 
 RRF_K = 60
@@ -35,4 +37,13 @@ class HybridRetriever:
         for r in bm25_results:
             by_id.setdefault(r.id, r)
 
-        return [by_id[chunk_id] for chunk_id, _score in fused[:top_k] if chunk_id in by_id]
+        # Return the RRF fused score, not the leg-native score. The legs use
+        # different, incomparable scales (Chroma cosine similarity vs. raw BM25),
+        # so returning whichever one `by_id` happened to hold would give a list
+        # whose scores are neither mutually comparable nor monotonically
+        # decreasing in the returned order.
+        return [
+            replace(by_id[chunk_id], score=rrf_score)
+            for chunk_id, rrf_score in fused[:top_k]
+            if chunk_id in by_id
+        ]

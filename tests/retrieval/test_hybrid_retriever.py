@@ -1,3 +1,5 @@
+import pytest
+
 from fda_device_rag.models import ScoredChunk, ChunkMetadata
 from fda_device_rag.retrieval.hybrid_retriever import reciprocal_rank_fusion, HybridRetriever
 
@@ -66,6 +68,49 @@ def test_hybrid_retriever_fuses_dense_and_bm25_results():
 
     assert len(top) == 2
     assert {c.id for c in top} == {"a", "b"}
+
+
+def test_hybrid_retriever_returns_rrf_scores_not_leg_native_scores():
+    """The returned .score must be the RRF fused score that actually determined
+    the ranking -- not the Chroma cosine similarity or the raw BM25 score,
+    which live on different, incomparable scales."""
+    dense_results = [_scored("a", 0.9), _scored("b", 0.8), _scored("c", 0.7)]
+    bm25_results = [_scored("a", 12.0), _scored("d", 7.0), _scored("b", 3.0)]
+
+    retriever = HybridRetriever(
+        dense_store=_FakeDenseStore(dense_results),
+        bm25_index=_FakeBM25Index(bm25_results),
+        embedder=_FakeEmbedder(),
+    )
+
+    top = retriever.retrieve("some query", top_k=4)
+
+    # Hand-computed with k=60, score = sum over each list of 1/(k + rank + 1):
+    #   a: dense rank 0, bm25 rank 0 -> 1/61 + 1/61
+    #   b: dense rank 1, bm25 rank 2 -> 1/62 + 1/63
+    #   d: bm25 rank 1 only          -> 1/62
+    #   c: dense rank 2 only         -> 1/63
+    expected = [
+        ("a", 1 / 61 + 1 / 61),
+        ("b", 1 / 62 + 1 / 63),
+        ("d", 1 / 62),
+        ("c", 1 / 63),
+    ]
+
+    assert [c.id for c in top] == [id_ for id_, _ in expected]
+    for result, (_, expected_score) in zip(top, expected):
+        assert result.score == pytest.approx(expected_score)
+
+    scores = [c.score for c in top]
+    assert scores == sorted(scores, reverse=True)
+    assert all(a > b for a, b in zip(scores, scores[1:]))
+
+    # None of the original leg-native scores survive into the output.
+    assert not any(c.score in (0.9, 0.8, 0.7, 12.0, 7.0, 3.0) for c in top)
+
+    # id/text/metadata are still carried through from the original results.
+    assert top[0].text == "text a"
+    assert top[0].metadata.source_type == "recall"
 
 
 def test_hybrid_retriever_returns_at_most_top_k():

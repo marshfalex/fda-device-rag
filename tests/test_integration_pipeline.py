@@ -39,7 +39,7 @@ class _StubEmbedder:
 
 def test_pipeline_retrieves_recall_chunk_for_matching_query(tmp_path):
     recall_record = {
-        "res_event_number": "1",
+        "product_res_number": "Z-0001-04",
         "reason_for_recall": "Battery may overheat during normal use.",
         "action": "Firmware update issued to affected units.",
         "product_description": "Implantable Pacemaker Pulse-Generator Model X200",
@@ -76,4 +76,4 @@ def test_pipeline_retrieves_recall_chunk_for_matching_query(tmp_path):
 
     results = retriever.retrieve("battery overheat pacemaker firmware update", top_k=1)
 
-    assert results[0].id == "recall-1"
+    assert results[0].id == "recall-Z-0001-04"

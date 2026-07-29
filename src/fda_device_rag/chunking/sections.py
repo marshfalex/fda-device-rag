@@ -33,4 +33,17 @@ def detect_sections(text: str) -> list[Section]:
     if current_body_lines:
         sections.append(Section(current_heading, "\n".join(current_body_lines).strip()))
 
-    return [s for s in sections if s.body]
+    non_empty = [s for s in sections if s.body]
+
+    # A running header/footer repeated on every page of a PDF looks like a new
+    # heading on each page, fragmenting one logical section into many
+    # identically-named tiny ones. Merge consecutive sections that share the
+    # exact same heading text back into a single section.
+    merged: list[Section] = []
+    for section in non_empty:
+        if merged and merged[-1].heading == section.heading:
+            merged[-1] = Section(section.heading, f"{merged[-1].body}\n{section.body}")
+        else:
+            merged.append(section)
+
+    return merged
