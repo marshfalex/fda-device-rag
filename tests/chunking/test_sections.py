@@ -217,3 +217,34 @@ def test_detect_sections_suppresses_masthead_acronym_before_first_real_heading_b
     assert [s.heading for s in sections] == ["Document", "PRODUCT OVERVIEW", "FLANGE"]
     assert "CBER" in sections[0].body
     assert "Attach the flange" in sections[2].body
+
+
+def test_detect_sections_rejects_lines_starting_with_lowercase_connector():
+    text = (
+        "WARNINGS\n"
+        "First warning body content here for context\n"
+        "and Open the access panel before proceeding\n"
+        "CONTRAINDICATIONS\n"
+        "Do not use in patients with known allergies\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 2
+    assert sections[0].heading == "WARNINGS"
+    assert "and Open the access panel" in sections[0].body
+    assert sections[1].heading == "CONTRAINDICATIONS"
+
+
+def test_detect_sections_rejects_title_case_catalog_code_rows_as_headings():
+    text = (
+        "ACCESSORIES\n"
+        "Widget1 Adapter2 Bracket3\n"
+        "Compatible parts are listed above for reference\n"
+    )
+
+    sections = detect_sections(text)
+
+    assert len(sections) == 1
+    assert sections[0].heading == "ACCESSORIES"
+    assert "Widget1 Adapter2 Bracket3" in sections[0].body

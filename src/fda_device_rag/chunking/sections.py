@@ -26,6 +26,9 @@ def _is_title_case(body: str) -> bool:
     words = body.rstrip(":").split()
     if not words or len(words) > MAX_TITLE_WORDS:
         return False
+    first_cleaned = words[0].strip(",")
+    if not first_cleaned or not first_cleaned[0].isalpha() or not first_cleaned[0].isupper():
+        return False
     has_long_word = False
     for word in words:
         cleaned = word.strip(",")

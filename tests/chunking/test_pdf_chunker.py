@@ -89,4 +89,44 @@ def test_chunk_pdf_text_keeps_chunk_at_exactly_min_length_boundary():
     )
 
     assert len(chunks) == 1
-    assert chunks[0].text == exactly_40_chars
+    assert chunks[0].text == f"WARNINGS\n{exactly_40_chars}"
+
+
+def test_chunk_pdf_text_prepends_heading_to_first_piece_of_each_section():
+    text = "WARNINGS\nMay cause mild irritation in rare cases and requires monitoring.\n"
+
+    chunks = chunk_pdf_text(
+        text,
+        source_type="ifu_pdf",
+        source_url="https://example.com/ifu-4.pdf",
+        document_title="Example IFU 4",
+        retrieved_date="2026-07-28",
+        id_prefix="ifu-4",
+    )
+
+    assert chunks[0].text.startswith("WARNINGS\n")
+
+
+def test_chunk_pdf_text_drops_title_case_false_positive_heading_chunks():
+    text = (
+        "WARNINGS\n"
+        "First warning content that is long enough to survive filtering easily.\n"
+        "Short Label\n"
+        "AB\n"
+        "CONTRAINDICATIONS\n"
+        "Do not use this device on patients with known allergies to latex.\n"
+    )
+
+    chunks = chunk_pdf_text(
+        text,
+        source_type="ifu_pdf",
+        source_url="https://example.com/ifu-5.pdf",
+        document_title="Example IFU 5",
+        retrieved_date="2026-07-28",
+        id_prefix="ifu-5",
+    )
+
+    section_names = [c.metadata.section_name for c in chunks]
+    assert "Short Label" not in section_names
+    assert "WARNINGS" in section_names
+    assert "CONTRAINDICATIONS" in section_names
