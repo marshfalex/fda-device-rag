@@ -65,9 +65,16 @@ Ran the full classifier (a-e) against the real extracted text of all 7 documents
 built actual `Section` objects, and measured chunk-count impact — not just raw
 heading-line counts.
 
-**Primary goal confirmed fixed:** largest single section, as % of the document's
-chunks, dropped from 94-100% to 1-10% across `78369`/`188844`/`153781` — matching or
-beating the 73141/Z-800F/intera-3000/FreedomEdge documents that were already fine.
+**Primary goal confirmed fixed:** largest single *section instance*, as % of the
+document's chunks, dropped from 94-100% to 1-10% across `78369`/`188844`/`153781` —
+matching or beating the 73141/Z-800F/intera-3000/FreedomEdge documents that were
+already fine. Note this measures the largest single contiguous section — a different,
+stricter metric than §4's later aggregate-by-repeated-label measurement (summing every
+non-consecutive instance sharing the same heading text across the whole document); both
+are real and both are reported precisely where used, but they answer different
+questions ("did one blob swallow the document" vs. "how much of the document ended up
+under one uninformative label, even if spread across many separate instances") and
+should not be compared to each other directly.
 
 **Regression found and addressed separately (§4), not by further classifier changes:**
 Title-Case detection also fires on tabular/reference content (alarm-code tables,
@@ -99,9 +106,17 @@ chunk under 150 characters by hand. Findings that fixed the threshold at 40:
   use the Zyno Administration set in the pump more than 72 hours."`), plus other real
   content in the 55-92 character range (a flow-rate spec, procedural instructions).
   These must survive.
-- Everything found under 40 characters is bare numbers, single-word/short-phrase table
-  cells, or truncated codes (`"Low"`, `"SN"`, `"6612B Secondary Red"`) — no real
-  warnings or instructions found below this line.
+- Everything found under 40 characters at the time of this inspection (against the
+  first-draft classifier, before the trailing-period/numbered-prefix/lowercase-first-word
+  refinements in §2d, §2e, and the whole-branch-review fix below) was bare numbers,
+  single-word/short-phrase table cells, or truncated codes (`"Low"`, `"SN"`,
+  `"6612B Secondary Red"`) — no real warnings or instructions found below this line.
+  The final classifier's under-40-char chunks were spot-checked afterward and include
+  a few prose fragments from residual false-positive heading splits (e.g. `"again to
+  resume infusion."`, appearing 5× in the raw text) — no unique safety content is lost
+  by dropping them (the same information survives in other surviving chunks), but the
+  inspection above technically predates the final classifier and shouldn't be read as
+  "the final classifier's dropped set was independently re-inspected line by line."
 - One accepted minor tradeoff: a 38-character symbol-glossary caption (`"Keep dry" →
   "Nonpyrogenic, see instructions for use"`) is lost — low individual retrieval value,
   judged acceptable.
@@ -134,6 +149,13 @@ originally estimated:**
 | `188844` | `Contains Nonbinding Recommendations` | **40%** |
 | `153781` | `Contains Nonbinding Recommendations` | **41%** |
 | all other 5 documents | (real section names) | 5-12% |
+
+(Measurement basis: counts and percentages above are over indexed chunks — i.e. after
+the 40-character minimum-length filter has already run — grouped into contiguous runs
+by consecutive identical `section_name`, then aggregated across all non-consecutive
+runs sharing the same label. Measuring instead directly against `detect_sections`'
+raw `Section.body` lengths, pre-chunking and pre-filter, gives different absolute
+counts but the same conclusion.)
 
 This is not the original swallowing bug (no document collapses to one catch-all
 section anymore) — it is the repeated running-footer phrase reappearing as the
@@ -186,6 +208,46 @@ problem (does the model, given a chunk whose only section label is
 `Contains Nonbinding Recommendations`, still answer correctly from the chunk's actual
 text — the label is metadata, not the retrieved content itself) once Phase 3's
 citation-grounding work is designed, rather than reopening this function a fourth time.
+
+## 4a. Findings From the Final Whole-Branch Review
+
+A whole-branch review of this branch (all 3 tasks plus the corrected residual-limitation
+paragraphs above) found two further issues, one fixed and one left as an additional,
+documented residual limitation alongside §4's:
+
+**Fixed: detected heading lines were being deleted from the retrievable corpus.**
+`chunk_pdf_text` originally put `section.heading` only into `ChunkMetadata.section_name`
+— never into `Chunk.text`. Since both `BM25Index` and `ChromaStore` index/embed only
+`chunk.text`, every detected heading line was permanently unsearchable by either
+retrieval leg. This predates this branch for ALL-CAPS headings, but Title-Case
+detection (§2a) made it materially worse — measured on the real corpus, 4.0% of all
+extracted PDF text (24,679 characters) was heading-only and vanished from the index,
+including short but meaningful captions like a symbol-glossary entry `"Keep dry"`.
+Fixed by prepending `section.heading` to the first piece produced from each section,
+with a reserved `EFFECTIVE_CHUNK_SIZE = 1600 - 81` budget (81 = the 80-character
+heading cap from §2's classifier + 1 newline) so the 1600-character chunk ceiling
+still holds after prepending, and with the minimum-length filter (§4) still evaluated
+against the piece's own content only, so the already-validated 40-character
+threshold's behavior is unchanged. Verified against both a realistic and a
+pathological (5,000-character no-separator body) worst case that the ceiling holds.
+
+**Also fixed in the same pass:** `_is_title_case` (§2a) was accepting lines that
+*start* with a lowercase connector word (e.g. `"and Open"`, `"or Operations"`) as
+valid headings, because the ≤3-character-word case-skip applied to the first word
+too — no real heading starts with a lowercase word. Fixed by checking the first
+word's capitalization unconditionally. 18 such false positives were measured across
+the 7 real documents before this fix.
+
+**Residual, not fixed: false-positive headings still pollute `section_name`, the
+citation label.** Real `section_name` values now present in the index include
+`'Drug'`, `'Tubing'`, `'Volume'`, `'Response'`, `'Press the'` — wrapped fragments or
+table-cell content that passed the classifier despite the guards in §2. These are
+the same "uninformative label" family as the `Contains Nonbinding Recommendations`
+problem above, just smaller in scale (they were not separately quantified). Since
+the heading-retrievability fix above ensures the actual chunk *text* stays correct
+and searchable regardless of the label, this is a citation-labeling-quality issue,
+not a retrieval-correctness one — consistent with the decision in §4 not to reopen
+`detect_sections` a fourth time. Left as a known limitation for the same reason.
 
 ## 5. Scope
 
