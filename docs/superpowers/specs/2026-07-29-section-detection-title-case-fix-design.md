@@ -116,14 +116,76 @@ via the sparse leg specifically (not just "unlikely to be retrieved" in general)
 then leave generation with nothing useful. Filtering these out is a retrieval-quality
 fix, not cosmetic.
 
-**Known, accepted residual limitation:** this does not eliminate all noise — repeated
-page-footer fragments and table-header-row repeats in the 40-90 character range
-remain in the corpus (e.g. `"...Z-800F Instructions for Use \nP/N 800F-IFU-2602, Rev.
-O"` appears many times, each ~58 characters). These are real English text, not the
+**Known, accepted residual limitation (magnitude corrected after real-corpus
+validation — see below):** this does not eliminate all noise — repeated page-footer
+fragments and table-header-row repeats in the 40-90 character range remain in the
+corpus (e.g. `"...Z-800F Instructions for Use \nP/N 800F-IFU-2602, Rev. O"` appears
+many times, each ~58 characters). These are real English text, not the
 bare-code/single-word pattern the 40-character filter targets, and are judged lower
 risk for the sparse-retrieval-favors-short-documents failure mode this fix is
-specifically closing. Not addressed in this design; may be revisited later if the
-eval harness surfaces them as an actual retrieval problem.
+specifically closing.
+
+**Real-corpus re-validation (Task 3 of the implementation plan) found this residual
+is substantially larger, on 2 of 7 documents specifically, than the paragraph above
+originally estimated:**
+
+| Document | Top repeated label | Share of document's chunks |
+|---|---|---|
+| `188844` | `Contains Nonbinding Recommendations` | **40%** |
+| `153781` | `Contains Nonbinding Recommendations` | **41%** |
+| all other 5 documents | (real section names) | 5-12% |
+
+This is not the original swallowing bug (no document collapses to one catch-all
+section anymore) — it is the repeated running-footer phrase reappearing as the
+"current heading" across many separate section instances (13 for `188844`, 25 for
+`153781`) that happen to share the same uninformative label, rather than one
+continuous blob.
+
+**A targeted fix (exact-duplicate-heading-text suppression: track heading strings
+already accepted, treat an exact repeat as continuation of the current section
+rather than a new boundary) was designed and empirically checked against the same
+corpus before implementation, per this project's established practice of validating
+before committing to a threshold — and rejected.** The check required: (1) confirm no
+document has a legitimate heading intentionally repeated across genuinely different
+content (the risk the design anticipated), and (2) confirm the repeated `Contains
+Nonbinding Recommendations` instances are predominantly thin (safe to merge). Check
+(1) found a real counter-example: `153781`'s `Outcome: Basic Documentation Level`
+repeats 4 times, each instance a genuinely different worked example (a blood pressure
+monitor, a behavioral therapy device, an OTC heart-rhythm app, an in-vitro nucleic
+acid test device — 1,088 to 4,308 characters each, all substantial). Blanket
+exact-duplicate suppression would have merged these 4 distinct examples into one
+section, losing the ability to cite one specifically — a new regression, not a fix.
+
+A refined "thinness gate" (suppress a repeat only if the same heading's *prior*
+instance was itself thin) was considered as a middle path and checked empirically
+against both known cases before implementation, not assumed to work:
+
+- The `Outcome: Basic/Enhanced Documentation Level` instances (which must never be
+  suppressed) are all 1,088-4,308 characters — safely classifiable as "substantial"
+  under any threshold set below ~1,000 characters.
+- But `Contains Nonbinding Recommendations` is **not** predominantly thin under such
+  a threshold: for `188844`, 2 of its 13 instances (18,645 and 22,992 characters)
+  account for 75% of all content attributed to that label; for `153781`, 5 of 25
+  instances account for 65%. A threshold low enough to protect the Documentation
+  Level examples leaves nearly all of the `Contains Nonbinding Recommendations`
+  content classified as "substantial" too — the signal cannot separate "boilerplate
+  repeat" from "real content that inherited a stale repeated label because no further
+  internal heading was detected before the next real heading." That's a materially
+  different problem (missing sub-heading detection within long spans) than
+  duplicate-heading merging can address, on this corpus.
+
+**Decision: no further detection-time change.** This is the third distinct heuristic
+considered for this function (after the Title-Case classifier itself and the
+masthead-suppression scoping) to fail a clean empirical fit; per this project's own
+established discipline (see Task 13's history in the retrieval-pipeline implementation
+plan — three review rounds on one function is the point to stop, not keep patching),
+continuing to stack heuristics on `detect_sections` has hit diminishing returns. The
+40-41% figure on `188844`/`153781` stands as a known, larger-than-originally-estimated
+limitation, not addressed in this design. It may be worth revisiting as a *generation*
+problem (does the model, given a chunk whose only section label is
+`Contains Nonbinding Recommendations`, still answer correctly from the chunk's actual
+text — the label is metadata, not the retrieved content itself) once Phase 3's
+citation-grounding work is designed, rather than reopening this function a fourth time.
 
 ## 5. Scope
 
