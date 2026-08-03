@@ -83,10 +83,30 @@ def resolve_gold(question, data_dir: Path = DEFAULT_DATA_DIR) -> list[str]:
     Translates the frozen file's benchmark-level source_type vocabulary
     ("recall"/"maude"/"guidance"/"ifu") to the corpus's ChunkMetadata
     vocabulary ("recall"/"maude_event"/"guidance_pdf"/"ifu_pdf") -- these are
-    two different vocabularies for two different purposes, not a bug."""
+    two different vocabularies for two different purposes, not a bug.
+
+    A malformed gold dict (missing a field the question's source_type
+    requires) is reported as a GoldResolutionError, not a bare KeyError, so
+    that an eval runner's `except GoldResolutionError` handler records it as
+    one question's resolution failure instead of aborting the whole run."""
     if question.source_type in ("recall", "maude"):
-        return resolve_structured_gold(question.source_type, question.gold["record_id"], data_dir=data_dir)
+        record_id = question.gold.get("record_id")
+        if record_id is None:
+            raise GoldResolutionError(
+                f"question {question.question_id!r} (source_type={question.source_type!r}) "
+                f"is missing required gold field 'record_id'"
+            )
+        return resolve_structured_gold(question.source_type, record_id, data_dir=data_dir)
     if question.source_type in ("guidance", "ifu"):
+        missing = [
+            f for f in ("document_title", "section_name", "instance_ordinal")
+            if question.gold.get(f) is None
+        ]
+        if missing:
+            raise GoldResolutionError(
+                f"question {question.question_id!r} (source_type={question.source_type!r}) "
+                f"is missing required gold field(s): {missing}"
+            )
         pdf_source_type = "guidance_pdf" if question.source_type == "guidance" else "ifu_pdf"
         return resolve_pdf_gold(
             question.gold["document_title"],

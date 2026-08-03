@@ -130,3 +130,30 @@ def test_resolve_gold_dispatches_guidance_and_ifu_to_pdf_resolver(mock_resolve):
         "188844", "Risk-Based Analysis", 1, source_type="guidance_pdf", data_dir=Path("data/raw")
     )
     assert result == ["188844-3"]
+
+
+def test_resolve_gold_raises_gold_resolution_error_when_structured_gold_missing_record_id():
+    # The frozen-file loader validates that a 'gold' key exists but not its
+    # inner fields, so a malformed gold dict reaches resolve_gold. It must
+    # surface as GoldResolutionError -- a bare KeyError would escape an eval
+    # runner's `except GoldResolutionError` handler and abort the whole run
+    # instead of being recorded as one question's resolution failure.
+    question = Question(
+        question_id="q1", source_type="recall", category=None, question="x?",
+        gold={"reason": "oops, no record_id"}, notes=None,
+    )
+
+    with pytest.raises(GoldResolutionError, match="missing required gold field 'record_id'"):
+        resolve_gold(question)
+
+
+@pytest.mark.parametrize("missing_field", ["document_title", "section_name", "instance_ordinal"])
+def test_resolve_gold_raises_gold_resolution_error_when_pdf_gold_missing_a_field(missing_field):
+    gold = {"document_title": "188844", "section_name": "Risk-Based Analysis", "instance_ordinal": 1}
+    del gold[missing_field]
+    question = Question(
+        question_id="q2", source_type="guidance", category=None, question="x?", gold=gold, notes=None,
+    )
+
+    with pytest.raises(GoldResolutionError, match=f"missing required gold field\\(s\\).*{missing_field}"):
+        resolve_gold(question)
