@@ -109,13 +109,16 @@ Required to be a precise, pre-declared mechanical rule, not a runtime judgment c
 a judgment call at the moment of application would reintroduce the same
 subjective-selection risk this mechanism exists to avoid.
 
-**Rule (final, after two rounds of empirical correction — see below):**
+**Rule (final, after four rounds of empirical correction — see below):**
 
 > An eligible instance (≥72 chars) is page-furniture only if another instance in the
-> same document has (a) the same total count of digit-runs (`\d+` matches), and (b)
-> every digit-run that differs between the two is ≤3 digits long. If digit-run counts
-> differ, or any differing run is 4+ digits, the instances are kept distinct and never
-> collapsed.
+> same document has (a) an **identical "skeleton"** — the text with every digit
+> stripped and whitespace collapsed — and, given that, (b) the same total count of
+> digit-runs (`\d+` matches) where every digit-run that differs between the two is ≤3
+> digits long. If the skeletons differ at all, the instances are kept distinct
+> regardless of digit-run shape. If skeletons match but digit-run counts differ, or any
+> differing run is 4+ digits, the instances are also kept distinct. Only when both
+> conditions hold are they collapsed.
 
 Rationale: furniture (running headers/footers) repeats near-verbatim except for an
 embedded page number; real content never does. A page number is well-modeled as a
@@ -172,8 +175,44 @@ flagged pairs:
   title/part-number line).
 
 Zero violations across both independent checks, on the full pool, after two prior
-rounds each found and closed a real gap, is the signal to lock the rule rather than
-continue iterating — this round found nothing new.
+rounds each found and closed a real gap, was read at the time as the signal to lock
+the rule. **Round 4 (found during implementation, not design — see below) showed this
+conclusion was premature:** the design-phase validation never checked whether the
+digit-run rule alone (without also requiring the surrounding text to match) could
+flag two *unrelated* real-content instances that merely happen to share a digit-run
+shape. That gap wasn't visible at design time because every candidate pair the
+round 1-3 scripts ever compared was pre-grouped by matching normalized text before the
+digit-run check ran — the design validation's own methodology silently depended on a
+precondition that never made it into the rule's written statement or the implemented
+function.
+
+**Round 4 (implementation-time discovery): the rule as shipped in Task 2 of the
+implementation plan omitted the skeleton-match precondition entirely** — it checked
+only digit-run count/length, never whether the non-digit text matched at all. This
+surfaced only when Task 8 ran the real candidate sampler end-to-end and logged an
+implausible 250 furniture skips (vs. the ~51 validated here). Inspecting the flagged
+pairs found real, unrelated hazard-analysis-table entries in `78369` (`Supply Voltage
+Error` vs. `Hazard Potential Causes` — two different failure-mode rows, no content
+overlap) collapsed purely because both happened to carry one page-number-scale digit
+run. Fixing this by requiring skeleton equality as a precondition (per the corrected
+rule above) surfaced a second, opposite-direction bug: a zero-digit-run guard added
+during Task 2's own implementation (to satisfy a test with two unrelated no-digit
+texts) was *also* wrongly suppressing genuine furniture that happens to contain no
+digits at all — confirmed real example: `188844`'s `Operations` section repeats 8
+times with byte-identical text and zero embedded digits. Removing that guard (now
+redundant and wrong once skeleton-matching is the primary gate — two different
+no-digit texts already fail on skeleton inequality alone) fixed both directions at
+once. Re-validated against the full real corpus post-fix: 598 eligible instances,
+**35 genuine furniture instances** (vs. the pre-fix 250 and the round-3 estimate of
+51 — the gap from 51 to 35 was not investigated further, since 35 is the number
+produced by the corrected, doubly-verified rule against the corpus as it exists today,
+not a target to be reverse-engineered toward).
+
+This is the actual lock point: the rule now requires the same evidence every round
+before it demanded — matching content, not just matching shape — and was found only
+by running the real pipeline end-to-end, which is why the implementation plan's Task 8
+runs the sampler against the real corpus rather than treating unit tests alone as
+sufficient verification for this function.
 
 ## 5. Gold-ID Schema
 
