@@ -4,33 +4,42 @@ DIGIT_RUN = re.compile(r"\d+")
 MAX_FURNITURE_DIGIT_RUN_LEN = 3
 
 
-def _skeleton(text: str) -> str:
+def _skeleton(text: str, heading: str) -> str:
+    if heading and text.startswith(heading + "\n"):
+        text = text[len(heading) + 1:]
     stripped = DIGIT_RUN.sub("", text)
     return re.sub(r"\s+", " ", stripped).strip()
 
 
-def is_page_furniture(text_a: str, text_b: str) -> bool:
-    """True if text_b is text_a's page-furniture duplicate: the two texts
-    are identical once all digits are stripped and whitespace is collapsed
-    (their "skeleton" matches -- this is the primary signal that the two
-    are the same repeating template, not coincidentally-similar unrelated
-    content), AND the same total count of digit-runs differ only by
-    page-number-scale values (each differing run at most
-    MAX_FURNITURE_DIGIT_RUN_LEN digits long). A skeleton mismatch alone is
-    conclusive: two texts with genuinely different words are never
-    furniture, regardless of how their digit-runs happen to compare. A
-    matching skeleton with zero digit-runs in either text means the texts
-    are byte-identical (nothing was stripped) -- also genuine furniture.
+def is_page_furniture(text_a: str, heading_a: str, text_b: str, heading_b: str) -> bool:
+    """True if text_b is text_a's page-furniture duplicate.
+
+    Each instance's own heading is stripped from its own text before
+    comparison (a repeating page footer commonly attaches to a different
+    real section heading each time it recurs -- e.g. the same footer
+    trailing "GETTING STARTED" on one page and "INFUSION MODE INFORMATION"
+    on another -- so comparing full text including heading would miss this
+    genuine furniture pattern, and comparing only the heading-stripped body
+    is what correctly recognizes it). After heading-stripping, the two
+    texts' "skeleton" (digits stripped, whitespace collapsed) must be
+    identical -- this is the primary signal that the two share the same
+    repeating template, not coincidentally-similar unrelated content, and
+    alone is sufficient to reject any pair with genuinely different words
+    (whether the difference is in the heading, the body, or both). Given a
+    matching skeleton, the digit-runs additionally must have the same count
+    with every differing run at most MAX_FURNITURE_DIGIT_RUN_LEN digits long
+    (page-number-scale) -- a residual guard against a matching skeleton
+    whose only difference is some other, non-page-number embedded value
+    (e.g. a long serial or part number).
+
     See docs/superpowers/specs/2026-08-03-eval-harness-design.md section 4
-    for the original digit-run analysis (still required as an extra guard
-    against theoretical cases like a varying non-page-number field hidden
-    inside an otherwise-matching skeleton), and the eval-harness
-    implementation plan's Task 8 real-corpus run for the specific
-    false-positive/false-negative pairs (unrelated hazard-table entries;
-    "Operations" repeated with zero embedded digits) that made the
-    skeleton-match precondition necessary.
+    for the original digit-run analysis and the round-2 false-positive
+    pairs (unrelated guidance citations; needle-set spec tables) that made
+    the skeleton-match precondition necessary, and section 4's round-1/
+    round-3 empirical validation for the heading-stripped comparison this
+    function restores.
     """
-    if _skeleton(text_a) != _skeleton(text_b):
+    if _skeleton(text_a, heading_a) != _skeleton(text_b, heading_b):
         return False
     runs_a = DIGIT_RUN.findall(text_a)
     runs_b = DIGIT_RUN.findall(text_b)

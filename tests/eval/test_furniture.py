@@ -5,14 +5,24 @@ def test_identical_footer_differing_only_by_page_number_is_furniture():
     a = "MAINTENANCE\nZ-800F Instructions for Use.  15 \nP/N 800F-IFU-2602, Rev. O"
     b = "MAINTENANCE\nZ-800F Instructions for Use.  21 \nP/N 800F-IFU-2602, Rev. O"
 
-    assert is_page_furniture(a, b) is True
+    assert is_page_furniture(a, "MAINTENANCE", b, "MAINTENANCE") is True
 
 
 def test_short_leading_page_number_difference_is_furniture():
     a = "GETTING STARTED\n16  Z-800F Instructions for Use \nP/N 800F-IFU-2602, Rev. O"
     b = "GETTING STARTED\n18  Z-800F Instructions for Use \nP/N 800F-IFU-2602, Rev. O"
 
-    assert is_page_furniture(a, b) is True
+    assert is_page_furniture(a, "GETTING STARTED", b, "GETTING STARTED") is True
+
+
+def test_repeating_footer_under_different_real_headings_is_furniture():
+    # Real Z-800F running footer attaching to two different real section
+    # headings -- confirmed via real-corpus validation that this genuine
+    # furniture pattern was missed by a heading-inclusive comparison.
+    text_a = "GETTING STARTED\nZ-800F Instructions for Use.  15 \nP/N 800F-IFU-2602, Rev. O"
+    text_b = "INFUSION MODE INFORMATION\nZ-800F Instructions for Use.  21 \nP/N 800F-IFU-2602, Rev. O"
+
+    assert is_page_furniture(text_a, "GETTING STARTED", text_b, "INFUSION MODE INFORMATION") is True
 
 
 def test_distinct_citations_differing_by_a_long_digit_run_are_not_furniture():
@@ -24,7 +34,12 @@ def test_distinct_citations_differing_by_a_long_digit_run_are_not_furniture():
     b = ("Medical Device Design\n"
          "(http://www.fda.gov/MedicalDevices/DeviceRegulationandGuidance/GuidanceDocuments/ucm259748.htm).")
 
-    assert is_page_furniture(a, b) is False
+    assert is_page_furniture(
+        a,
+        "Compliance on Off-the-Shelf Software Use in Medical Devices",
+        b,
+        "Medical Device Design",
+    ) is False
 
 
 def test_distinct_spec_tables_with_long_differing_item_numbers_are_not_furniture():
@@ -38,7 +53,9 @@ def test_distinct_spec_tables_with_long_differing_item_numbers_are_not_furniture
                   "6 mm RMS22406 0.7 ml 10\n9 mm RMS22409 0.7 ml 10\n"
                   "12 mm RMS22412 0.7 ml 10\n14 mm RMS22414 0.7 ml 10")
 
-    assert is_page_furniture(single_needle, two_needle) is False
+    assert is_page_furniture(
+        single_needle, "Single-Needle Sets", two_needle, "Two-Needle Sets"
+    ) is False
 
 
 def test_distinct_spec_tables_with_differing_digit_run_counts_are_not_furniture():
@@ -54,11 +71,16 @@ def test_distinct_spec_tables_with_differing_digit_run_counts_are_not_furniture(
                   "9 mm RMS62609 0.6 ml 10\n12 mm RMS62612 0.6 ml 10\n"
                   "14 mm RMS62614 0.6 ml 10\n16")
 
-    assert is_page_furniture(single_needle, six_needle) is False
+    assert is_page_furniture(
+        single_needle, "Single-Needle Sets", six_needle, "Six-Needle Sets"
+    ) is False
 
 
 def test_completely_unrelated_text_with_no_digits_is_not_furniture():
-    assert is_page_furniture("WARNINGS\nDo not reuse this device.", "CAUTION\nKeep away from heat.") is False
+    assert is_page_furniture(
+        "WARNINGS\nDo not reuse this device.", "WARNINGS",
+        "CAUTION\nKeep away from heat.", "CAUTION",
+    ) is False
 
 
 def test_distinct_hazard_table_entries_with_matching_digit_run_counts_are_not_furniture():
@@ -93,7 +115,9 @@ def test_distinct_hazard_table_entries_with_matching_digit_run_counts_are_not_fu
         " \n 14 \nReverse Flow)"
     )
 
-    assert is_page_furniture(instance_a, instance_b) is False
+    assert is_page_furniture(
+        instance_a, "Supply Voltage Error", instance_b, "Hazard Potential Causes"
+    ) is False
 
 
 def test_identical_zero_digit_text_is_furniture():
@@ -105,7 +129,7 @@ def test_identical_zero_digit_text_is_furniture():
         "Operations\nRisk-Based Analysis Assurance Activities Establishing the appropriate \nrecord"
     )
 
-    assert is_page_furniture(text, text) is True
+    assert is_page_furniture(text, "Operations", text, "Operations") is True
 
 
 def test_identical_skeleton_with_differing_long_digit_runs_are_not_furniture():
@@ -122,4 +146,4 @@ def test_identical_skeleton_with_differing_long_digit_runs_are_not_furniture():
     # Skeletons are identical: both -> "Serial Number: SN verified"
     # But digit-runs differ in length: ["999"] vs ["99999"]
     # Since max(3, 5) > MAX_FURNITURE_DIGIT_RUN_LEN, should return False
-    assert is_page_furniture(a, b) is False
+    assert is_page_furniture(a, a, b, b) is False

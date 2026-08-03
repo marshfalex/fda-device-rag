@@ -119,7 +119,15 @@ def _flag_furniture(eligible):
     furniture_of = {}
     kept = []
     for idx, instance in enumerate(eligible):
-        match = next((k for k in kept if is_page_furniture(eligible[k].text, instance.text)), None)
+        match = next(
+            (
+                k for k in kept
+                if is_page_furniture(
+                    eligible[k].text, eligible[k].section_name, instance.text, instance.section_name
+                )
+            ),
+            None,
+        )
         if match is not None:
             furniture_of[idx] = match
         else:
