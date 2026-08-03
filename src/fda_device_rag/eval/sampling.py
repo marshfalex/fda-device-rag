@@ -1,6 +1,8 @@
 import random
 
 from fda_device_rag.documents.structured import recall_to_chunk, event_to_chunk
+from fda_device_rag.eval.section_instances import build_section_instances
+from fda_device_rag.eval.furniture import is_page_furniture
 
 RECALL_FLOOR_CHARS = 100
 EVENT_FLOOR_CHARS = 100
@@ -106,3 +108,50 @@ def sample_event_candidates(records, retrieved_date, base_seed, categories=EVENT
             "record": chosen,
         })
     return results
+
+
+def _flag_furniture(eligible):
+    """Returns {index_of_furniture_instance: index_of_first_instance_it_duplicates}
+    for every instance in `eligible` that is a page-furniture duplicate of an
+    earlier instance in the same list. Computed pool-wide (all pairs against
+    instances kept so far), matching the design doc's full-pool validation
+    methodology -- not scoped to what a live draw has selected so far."""
+    furniture_of = {}
+    kept = []
+    for idx, instance in enumerate(eligible):
+        match = next((k for k in kept if is_page_furniture(eligible[k].text, instance.text)), None)
+        if match is not None:
+            furniture_of[idx] = match
+        else:
+            kept.append(idx)
+    return furniture_of
+
+
+def sample_pdf_section_candidates(document_title, chunks, quota, base_seed, floor=PDF_SECTION_FLOOR_CHARS):
+    """Selects `quota` distinct, non-furniture section instances from this
+    document's chunks. Furniture exclusion happens before the random draw
+    (pool-wide, per _flag_furniture), then `quota` instances are drawn
+    without replacement from what remains."""
+    instances = build_section_instances(chunks)
+    eligible = [i for i in instances if len(i.text) >= floor]
+
+    furniture_of = _flag_furniture(eligible)
+    skip_log = [
+        (
+            f"{document_title}:{eligible[idx].section_name}#{eligible[idx].instance_ordinal}",
+            f"{document_title}:{eligible[match].section_name}#{eligible[match].instance_ordinal}",
+        )
+        for idx, match in furniture_of.items()
+    ]
+
+    non_furniture = [inst for i, inst in enumerate(eligible) if i not in furniture_of]
+
+    if len(non_furniture) < quota:
+        raise EmptyCandidatePoolError(
+            f"document {document_title!r} has only {len(non_furniture)} non-furniture "
+            f"eligible section instances, needed {quota}"
+        )
+
+    rng = random.Random(f"{base_seed}-pdf-{document_title}")
+    selected = rng.sample(non_furniture, quota)
+    return selected, skip_log
