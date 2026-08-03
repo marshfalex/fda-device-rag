@@ -7,5 +7,6 @@ data/raw/
 data/chroma/
 data/manifest.csv
 data/bm25_index.pkl
+data/eval/candidates.json
 *.egg-info/
 .pytest_cache/
