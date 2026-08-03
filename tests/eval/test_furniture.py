@@ -25,6 +25,19 @@ def test_repeating_footer_under_different_real_headings_is_furniture():
     assert is_page_furniture(text_a, "GETTING STARTED", text_b, "INFUSION MODE INFORMATION") is True
 
 
+def test_digit_bearing_heading_does_not_pollute_the_digit_run_comparison():
+    # A real Z-800F heading (design doc S4, round 1) that itself contains a
+    # digit ("800"). Regression test for a review-caught inconsistency where
+    # the skeleton was computed on heading-stripped text but the digit-run
+    # extraction still ran on the original, unstripped text -- the heading's
+    # embedded "800" would inject a spurious extra digit-run, making this
+    # genuine furniture pair wrongly rejected on a digit-run-count mismatch.
+    text_a = "LOADING IV SET INTO Z-800F PUMP\nZ-800F Instructions for Use.  15 \nP/N 800F-IFU-2602, Rev. O"
+    text_b = "MAINTENANCE\nZ-800F Instructions for Use.  21 \nP/N 800F-IFU-2602, Rev. O"
+
+    assert is_page_furniture(text_a, "LOADING IV SET INTO Z-800F PUMP", text_b, "MAINTENANCE") is True
+
+
 def test_distinct_citations_differing_by_a_long_digit_run_are_not_furniture():
     # Real guidance-doc citations that a naive digit-stripping rule wrongly
     # collapsed (design doc S4, round 2) -- different URLs, different topics,

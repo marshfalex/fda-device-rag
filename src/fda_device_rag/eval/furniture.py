@@ -47,11 +47,10 @@ def is_page_furniture(text_a: str, heading_a: str, text_b: str, heading_b: str) 
     for the round-2 false-positive pairs (unrelated guidance citations;
     needle-set spec tables) that made the skeleton-match precondition
     necessary, and section 4's round 5 for the cross-heading-footer
-    evidence (round 1's and round 3's own empirical scripts always grouped
-    candidates by heading first, which is what let them find these cases;
-    that grouping never made it into this function until round 5, and is
-    an implementation-time discovery, not a restoration of a previously
-    validated behavior).
+    evidence -- a repeating footer that trails a different real heading
+    each time it recurs. Per-instance heading stripping first shipped in
+    round 5; it is an implementation-time discovery, not a restoration of
+    previously validated behavior.
     """
     stripped_a = _strip_heading(text_a, heading_a)
     stripped_b = _strip_heading(text_b, heading_b)

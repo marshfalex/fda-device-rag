@@ -219,17 +219,16 @@ variant without the period) repeats under many different real headings —
 genuine section headings, not furniture themselves, that this footer happens to
 trail. Comparing heading+body together (round 4's shipped comparison) never matches
 two such instances, because their headings differ even though their footers are
-identical. Note this is *not* a case round 1-3's original validation scripts missed:
-those scripts always grouped candidates by heading-stripped normalized text first
-(the `normalize(text, heading)` helper used throughout §4's validation strips the
-instance's own heading before comparing), which is exactly what let them correctly
-find the Z-800F cross-heading pattern as genuine furniture — that grouping step
-simply never made it into the round-4 shipped function, whose docstring initially and
-incorrectly described the heading-stripped comparison as "restoring" prior validated
-behavior. It does not restore anything: rounds 1-3 validated a heading-stripped
-comparison but the round-4 code never implemented one, so round 5's fix is the first
-time that comparison basis has actually shipped in code, not a regression from an
-earlier correct state.
+identical. An earlier version of this fix's docstring described the heading-stripped
+comparison as "restoring" behavior validated in rounds 1-3 — that framing does not
+hold up: whatever exact grouping those rounds' now-gone validation scripts used
+(their code no longer exists in inspectable form; the design doc's prose summaries of
+their output are not precise enough to settle whether cross-heading matches were
+actually being found or whether same-heading-labeled clusters were the only kind
+observed), the round-4 shipped function never implemented per-instance heading
+stripping in code at all. Round 5 is the first time this comparison basis has
+actually shipped, full stop — not a restoration of anything, and not asserted to be
+a re-discovery of a specific prior result.
 
 **Fix:** strip each instance's own heading from its own text before computing both
 halves of the rule — the skeleton *and* the digit-run extraction must operate on the
@@ -240,14 +239,16 @@ digit, e.g. any heading mentioning `Z-800F`, would inject a spurious digit-run i
 only one half of the comparison). Verified against the full real corpus: 598 eligible
 instances, **41 genuine furniture instances**.
 
-**On the residual 41-vs-51 gap:** round 3's 51 figure was itself a count of same-heading
-collapses only (round 1's clusters are heading-keyed, e.g. `'GETTING STARTED' × 8/×12`
-in §4 round 1) — it never counted the cross-heading pattern round 5 exists to catch,
-so 41 is not "closing most of the gap toward 51"; it is a different, previously
-uncounted population. The two counts are not directly comparable, and are not
-reconciled further here — five rounds of empirical correction, each finding and
-closing a real, evidence-backed gap, is the point to stop, not keep re-deriving an
-early intermediate estimate from a superseded methodology as a target.
+**On the residual 41-vs-51 gap:** not reconciled, and not claimed to be understood.
+Round 3's 51 was produced by a script that no longer exists in inspectable form, so
+this document cannot verify precisely what it was and wasn't counting rather than
+speculate about it. What can be stated with confidence: 41 is the number produced by
+the current rule — skeleton-match on heading-stripped text, computed consistently for
+both the skeleton and the digit-run check — against the corpus as it exists today,
+independently verified in code review (round 5's fix-review cycle, not just the
+original implementation). It is reported as that, not reverse-engineered toward
+matching an earlier, superseded estimate. Five rounds of empirical correction, each
+finding and closing a real, evidence-backed gap, is the point to stop.
 
 This is the actual lock point: the rule now requires the same evidence every round
 before it demanded — matching content (heading-independent), not just matching shape,
