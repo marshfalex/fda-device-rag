@@ -93,3 +93,20 @@ def test_identical_zero_digit_text_is_furniture():
     )
 
     assert is_page_furniture(text, text) is True
+
+
+def test_identical_skeleton_with_differing_long_digit_runs_are_not_furniture():
+    # Two texts with identical skeleton (same words, digits stripped) but
+    # where one digit-run exceeds MAX_FURNITURE_DIGIT_RUN_LEN (3 digits).
+    # This directly tests the digit-run length guard (line 40 of furniture.py),
+    # which is not exercised by any existing "not furniture" test case.
+    # Both texts could be furniture (page numbers), but the embedded
+    # serial numbers differ in scale (3 vs 5 digits), indicating they are
+    # genuinely different content, not page-number variants.
+    a = "Serial Number: SN999 verified"
+    b = "Serial Number: SN99999 verified"
+
+    # Skeletons are identical: both -> "Serial Number: SN verified"
+    # But digit-runs differ in length: ["999"] vs ["99999"]
+    # Since max(3, 5) > MAX_FURNITURE_DIGIT_RUN_LEN, should return False
+    assert is_page_furniture(a, b) is False
