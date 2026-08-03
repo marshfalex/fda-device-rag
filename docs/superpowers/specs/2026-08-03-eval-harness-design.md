@@ -283,9 +283,26 @@ instances, locate the Nth occurrence of the heading in the document, and take
 frozen file stores semantic identity instead of chunk IDs directly — chunk boundaries
 have already shifted once in this project (the `EFFECTIVE_CHUNK_SIZE` change), and
 pinning literal chunk-ID lists would silently invalidate part of a frozen, committed
-benchmark on the next such change with no signal that it happened. A locator resolved
-at eval time means only a change to section *detection* itself (a much rarer event,
-already covered by its own test suite) could affect resolution.
+benchmark on the next such change with no signal that it happened.
+
+**Known limitation (found in the final whole-branch code review, not fixed structurally):**
+`instance_ordinal` is computed from `chunk_pdf_text`'s *chunk* output
+(`section_instances.py`'s `build_section_instances`), not directly from
+`detect_sections`'s section list. `chunk_pdf_text` drops any produced chunk under
+`MIN_CHUNK_CHARS` (40 characters, per the section-detection-fix design). If a section
+between two same-named instances is ever entirely dropped by that filter, the two
+same-named instances become adjacent in the chunk stream and silently merge into one
+`SectionInstance` — shifting every subsequent ordinal for that heading by one. This
+means resolution stability depends on `MIN_CHUNK_CHARS` as well as section detection,
+not on section detection alone as an earlier version of this document claimed.
+Verified this is currently benign against the real corpus (`188844` has exactly one
+such case — `Operations` — and the merged instance was not drawn into the frozen
+benchmark), but it is a latent hazard for any future re-chunking change: a shifted
+ordinal produces no exception, just a resolved answer to the wrong instance. Not fixed
+here (would require either building instances from `detect_sections` output directly,
+or a corroborating fingerprint stored in the gold locator to hard-error on mismatch —
+both real design changes, deferred since no real question has been authored against
+this schema yet).
 
 **Resolution failure is a hard, visible error, not a silent skip or a silent miss:** if
 a locator can't be resolved (heading renamed, document dropped, ordinal now
