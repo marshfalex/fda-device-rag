@@ -109,16 +109,20 @@ Required to be a precise, pre-declared mechanical rule, not a runtime judgment c
 a judgment call at the moment of application would reintroduce the same
 subjective-selection risk this mechanism exists to avoid.
 
-**Rule (final, after four rounds of empirical correction — see below):**
+**Rule (final, after five rounds of empirical correction — see below):**
 
 > An eligible instance (≥72 chars) is page-furniture only if another instance in the
-> same document has (a) an **identical "skeleton"** — the text with every digit
-> stripped and whitespace collapsed — and, given that, (b) the same total count of
-> digit-runs (`\d+` matches) where every digit-run that differs between the two is ≤3
-> digits long. If the skeletons differ at all, the instances are kept distinct
-> regardless of digit-run shape. If skeletons match but digit-run counts differ, or any
-> differing run is 4+ digits, the instances are also kept distinct. Only when both
-> conditions hold are they collapsed.
+> same document, **after each instance's own section heading is stripped from its own
+> text**, has (a) an **identical "skeleton"** — the heading-stripped text with every
+> digit stripped and whitespace collapsed — and, given that, (b) the same total count
+> of digit-runs (`\d+` matches, computed on the same heading-stripped text as the
+> skeleton) where every digit-run that differs between the two is ≤3 digits long. If
+> the skeletons differ at all, the instances are kept distinct regardless of digit-run
+> shape. If skeletons match but digit-run counts differ, or any differing run is 4+
+> digits, the instances are also kept distinct. Only when both conditions hold are
+> they collapsed. Stripping each instance's own heading first (rather than comparing
+> full text including heading) is required because a repeating footer commonly
+> attaches to a *different* real section heading each time it recurs — see round 5.
 
 Rationale: furniture (running headers/footers) repeats near-verbatim except for an
 embedded page number; real content never does. A page number is well-modeled as a
@@ -194,25 +198,64 @@ implausible 250 furniture skips (vs. the ~51 validated here). Inspecting the fla
 pairs found real, unrelated hazard-analysis-table entries in `78369` (`Supply Voltage
 Error` vs. `Hazard Potential Causes` — two different failure-mode rows, no content
 overlap) collapsed purely because both happened to carry matching-count,
-page-number-scale digit-run shapes. Fixing this by requiring skeleton equality as a precondition (per the corrected
-rule above) surfaced a second, opposite-direction bug: a zero-digit-run guard added
+page-number-scale digit-run shapes. Fixing this by requiring skeleton equality as a
+precondition surfaced a second, opposite-direction bug: a zero-digit-run guard added
 during Task 2's own implementation (to satisfy a test with two unrelated no-digit
 texts) was *also* wrongly suppressing genuine furniture that happens to contain no
 digits at all — confirmed real example: `188844`'s `Operations` section repeats 8
 times with byte-identical text and zero embedded digits. Removing that guard (now
 redundant and wrong once skeleton-matching is the primary gate — two different
 no-digit texts already fail on skeleton inequality alone) fixed both directions at
-once. Re-validated against the full real corpus post-fix: 598 eligible instances,
-**35 genuine furniture instances** (vs. the pre-fix 250 and the round-3 estimate of
-51 — the gap from 51 to 35 was not investigated further, since 35 is the number
-produced by the corrected, doubly-verified rule against the corpus as it exists today,
-not a target to be reverse-engineered toward).
+once. Re-validated against the full real corpus post-fix: 598 eligible instances, 35
+genuine furniture instances (vs. the pre-fix 250).
+
+**Round 5 (found during the same real-corpus verification pass, before round 4's fix
+was accepted as final): comparing full text — heading included — misses genuine
+furniture where a repeating footer attaches to a *different* real heading each time.**
+`Z-800F_Instructions_for_Use_Rev_O`'s running footer
+(`"Z-800F Instructions for Use.  NN \nP/N 800F-IFU-2602, Rev. O"`, or a punctuation
+variant without the period) repeats under many different real headings —
+`GETTING STARTED`, `INFUSION MODE INFORMATION`, `MAINTENANCE`, and others are all
+genuine section headings, not furniture themselves, that this footer happens to
+trail. Comparing heading+body together (round 4's shipped comparison) never matches
+two such instances, because their headings differ even though their footers are
+identical. Note this is *not* a case round 1-3's original validation scripts missed:
+those scripts always grouped candidates by heading-stripped normalized text first
+(the `normalize(text, heading)` helper used throughout §4's validation strips the
+instance's own heading before comparing), which is exactly what let them correctly
+find the Z-800F cross-heading pattern as genuine furniture — that grouping step
+simply never made it into the round-4 shipped function, whose docstring initially and
+incorrectly described the heading-stripped comparison as "restoring" prior validated
+behavior. It does not restore anything: rounds 1-3 validated a heading-stripped
+comparison but the round-4 code never implemented one, so round 5's fix is the first
+time that comparison basis has actually shipped in code, not a regression from an
+earlier correct state.
+
+**Fix:** strip each instance's own heading from its own text before computing both
+halves of the rule — the skeleton *and* the digit-run extraction must operate on the
+same heading-stripped text, not just the skeleton (an initial version of this fix
+computed the skeleton on heading-stripped text but the digit-runs on the original,
+un-stripped text — an inconsistency caught in review, since a heading containing a
+digit, e.g. any heading mentioning `Z-800F`, would inject a spurious digit-run into
+only one half of the comparison). Verified against the full real corpus: 598 eligible
+instances, **41 genuine furniture instances**.
+
+**On the residual 41-vs-51 gap:** round 3's 51 figure was itself a count of same-heading
+collapses only (round 1's clusters are heading-keyed, e.g. `'GETTING STARTED' × 8/×12`
+in §4 round 1) — it never counted the cross-heading pattern round 5 exists to catch,
+so 41 is not "closing most of the gap toward 51"; it is a different, previously
+uncounted population. The two counts are not directly comparable, and are not
+reconciled further here — five rounds of empirical correction, each finding and
+closing a real, evidence-backed gap, is the point to stop, not keep re-deriving an
+early intermediate estimate from a superseded methodology as a target.
 
 This is the actual lock point: the rule now requires the same evidence every round
-before it demanded — matching content, not just matching shape — and was found only
-by running the real pipeline end-to-end, which is why the implementation plan's Task 8
-runs the sampler against the real corpus rather than treating unit tests alone as
-sufficient verification for this function.
+before it demanded — matching content (heading-independent), not just matching shape,
+computed consistently across both halves of the comparison — and rounds 4-5 were found
+only by running the real pipeline end-to-end and having that result independently
+reviewed, which is why the implementation plan's Task 8 runs the sampler against the
+real corpus and treats a whole-branch review as required, rather than treating unit
+tests alone as sufficient verification for this function.
 
 ## 5. Gold-ID Schema
 

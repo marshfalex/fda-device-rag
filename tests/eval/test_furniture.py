@@ -146,4 +146,6 @@ def test_identical_skeleton_with_differing_long_digit_runs_are_not_furniture():
     # Skeletons are identical: both -> "Serial Number: SN verified"
     # But digit-runs differ in length: ["999"] vs ["99999"]
     # Since max(3, 5) > MAX_FURNITURE_DIGIT_RUN_LEN, should return False
-    assert is_page_furniture(a, a, b, b) is False
+    # No heading to strip (single-line fixture) -- use "" rather than the
+    # whole text, so the argument is semantically an absent heading.
+    assert is_page_furniture(a, "", b, "") is False

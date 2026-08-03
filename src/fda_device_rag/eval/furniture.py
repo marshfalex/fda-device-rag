@@ -4,9 +4,13 @@ DIGIT_RUN = re.compile(r"\d+")
 MAX_FURNITURE_DIGIT_RUN_LEN = 3
 
 
-def _skeleton(text: str, heading: str) -> str:
+def _strip_heading(text: str, heading: str) -> str:
     if heading and text.startswith(heading + "\n"):
-        text = text[len(heading) + 1:]
+        return text[len(heading) + 1:]
+    return text
+
+
+def _skeleton(text: str) -> str:
     stripped = DIGIT_RUN.sub("", text)
     return re.sub(r"\s+", " ", stripped).strip()
 
@@ -32,17 +36,29 @@ def is_page_furniture(text_a: str, heading_a: str, text_b: str, heading_b: str) 
     whose only difference is some other, non-page-number embedded value
     (e.g. a long serial or part number).
 
+    Both the skeleton and the digit-run comparison operate on each text
+    with its own heading already stripped -- the two halves of the rule
+    must agree on what "the content" is, otherwise a heading that itself
+    contains digits (a real pattern in this corpus, e.g. `Z-800F`) would
+    inject a spurious extra/differing digit-run into the comparison after
+    the skeleton already matched, silently missing genuine furniture.
+
     See docs/superpowers/specs/2026-08-03-eval-harness-design.md section 4
-    for the original digit-run analysis and the round-2 false-positive
-    pairs (unrelated guidance citations; needle-set spec tables) that made
-    the skeleton-match precondition necessary, and section 4's round-1/
-    round-3 empirical validation for the heading-stripped comparison this
-    function restores.
+    for the round-2 false-positive pairs (unrelated guidance citations;
+    needle-set spec tables) that made the skeleton-match precondition
+    necessary, and section 4's round 5 for the cross-heading-footer
+    evidence (round 1's and round 3's own empirical scripts always grouped
+    candidates by heading first, which is what let them find these cases;
+    that grouping never made it into this function until round 5, and is
+    an implementation-time discovery, not a restoration of a previously
+    validated behavior).
     """
-    if _skeleton(text_a, heading_a) != _skeleton(text_b, heading_b):
+    stripped_a = _strip_heading(text_a, heading_a)
+    stripped_b = _strip_heading(text_b, heading_b)
+    if _skeleton(stripped_a) != _skeleton(stripped_b):
         return False
-    runs_a = DIGIT_RUN.findall(text_a)
-    runs_b = DIGIT_RUN.findall(text_b)
+    runs_a = DIGIT_RUN.findall(stripped_a)
+    runs_b = DIGIT_RUN.findall(stripped_b)
     if len(runs_a) != len(runs_b):
         return False
     for run_a, run_b in zip(runs_a, runs_b):
