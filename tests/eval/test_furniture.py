@@ -59,3 +59,37 @@ def test_distinct_spec_tables_with_differing_digit_run_counts_are_not_furniture(
 
 def test_completely_unrelated_text_with_no_digits_is_not_furniture():
     assert is_page_furniture("WARNINGS\nDo not reuse this device.", "CAUTION\nKeep away from heat.") is False
+
+
+def test_distinct_hazard_table_entries_with_matching_digit_run_counts_are_not_furniture():
+    # Real hazard-analysis/FMEA table entries from data/raw/guidance_pdfs/78369.pdf
+    # (document title "78369") that a digit-run-only rule wrongly collapsed
+    # (Task 8 real-corpus run) -- two entirely different table rows that
+    # happen to have the same count of short digit-runs (an embedded page
+    # number), but completely different surrounding words.
+    instance_a = (
+        "Supply Voltage Error\nAC supply exceeds limits \nBattery voltage exceeds limits \n"
+        "Battery depleted \nVoltage conversion failed \nBattery Failure Battery voltage too low \n"
+        "Battery depleted \nBattery overcharged \nLeakage Current too high Inadequate shielding \n"
+        " \n 15 \nShort circuit \nCircuit failure Short circu..."
+    )
+    instance_b = (
+        "Hazard Potential Causes\nAir in Infusion Line Incorrect/incomplete priming processes \n"
+        "Broken, loose, or unsealed delivery path \nThe pump is unable to release gas or air \n"
+        "The pump is set up with an incompatible infusion set \nOcclusion  Delivery path obstructed, "
+        "e.g., kinked tubes \nChemical precipitati..."
+    )
+
+    assert is_page_furniture(instance_a, instance_b) is False
+
+
+def test_identical_zero_digit_text_is_furniture():
+    # Real repeating fragment from data/raw/guidance_pdfs/188844.pdf -- the
+    # section "Operations" recurs 8 times with byte-identical text and no
+    # digits anywhere. The old zero-digit-run guard wrongly excluded this
+    # genuine furniture from ever being flagged (Task 8 real-corpus run).
+    text = (
+        "Operations\nRisk-Based Analysis Assurance Activities Establishing the appropriate \nrecord"
+    )
+
+    assert is_page_furniture(text, text) is True
