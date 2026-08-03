@@ -63,21 +63,34 @@ def test_completely_unrelated_text_with_no_digits_is_not_furniture():
 
 def test_distinct_hazard_table_entries_with_matching_digit_run_counts_are_not_furniture():
     # Real hazard-analysis/FMEA table entries from data/raw/guidance_pdfs/78369.pdf
-    # (document title "78369") that a digit-run-only rule wrongly collapsed
-    # (Task 8 real-corpus run) -- two entirely different table rows that
-    # happen to have the same count of short digit-runs (an embedded page
-    # number), but completely different surrounding words.
+    # (document title "78369", section_name "Supply Voltage Error" vs
+    # "Hazard Potential Causes") that a digit-run-only rule wrongly collapsed
+    # (Task 8 real-corpus run): two entirely unrelated table rows that
+    # coincidentally carry the same count of short, page-number-scale digit
+    # runs (one embedded page number each: "15" vs "14"), but have
+    # completely different skeletons (surrounding words). This pins the bug
+    # where digit-run count/scale matching alone -- without first requiring
+    # skeleton equality -- produced a false positive: verified below that
+    # the pre-fix logic (digit-run comparison with no skeleton check) would
+    # incorrectly call this pair furniture, while the fixed
+    # is_page_furniture correctly rejects it on skeleton mismatch.
     instance_a = (
         "Supply Voltage Error\nAC supply exceeds limits \nBattery voltage exceeds limits \n"
         "Battery depleted \nVoltage conversion failed \nBattery Failure Battery voltage too low \n"
         "Battery depleted \nBattery overcharged \nLeakage Current too high Inadequate shielding \n"
-        " \n 15 \nShort circuit \nCircuit failure Short circu..."
+        " \n 15 \nShort circuit"
     )
     instance_b = (
         "Hazard Potential Causes\nAir in Infusion Line Incorrect/incomplete priming processes \n"
         "Broken, loose, or unsealed delivery path \nThe pump is unable to release gas or air \n"
         "The pump is set up with an incompatible infusion set \nOcclusion  Delivery path obstructed, "
-        "e.g., kinked tubes \nChemical precipitati..."
+        "e.g., kinked tubes \nChemical precipitation inside the delivery path \n"
+        "Bolus occurring after an occlusion \nUncontrolled Flow of Infusate (e.g. \n"
+        "free flow) \nValves in the delivery path are broken \n"
+        "The pump is positioned much higher than the infusion \nsite, causing unintentional drug flow \n"
+        "The delivery path is damaged, creating a vent on the path \nthat allows unintentional gravity flow \n"
+        "Retrograde Flow of Infusate (e.g. The pump is positioned much lower than the infusion \n"
+        " \n 14 \nReverse Flow)"
     )
 
     assert is_page_furniture(instance_a, instance_b) is False

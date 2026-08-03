@@ -193,8 +193,8 @@ surfaced only when Task 8 ran the real candidate sampler end-to-end and logged a
 implausible 250 furniture skips (vs. the ~51 validated here). Inspecting the flagged
 pairs found real, unrelated hazard-analysis-table entries in `78369` (`Supply Voltage
 Error` vs. `Hazard Potential Causes` — two different failure-mode rows, no content
-overlap) collapsed purely because both happened to carry one page-number-scale digit
-run. Fixing this by requiring skeleton equality as a precondition (per the corrected
+overlap) collapsed purely because both happened to carry matching-count,
+page-number-scale digit-run shapes. Fixing this by requiring skeleton equality as a precondition (per the corrected
 rule above) surfaced a second, opposite-direction bug: a zero-digit-run guard added
 during Task 2's own implementation (to satisfy a test with two unrelated no-digit
 texts) was *also* wrongly suppressing genuine furniture that happens to contain no
