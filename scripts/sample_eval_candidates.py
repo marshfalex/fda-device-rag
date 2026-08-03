@@ -16,6 +16,7 @@ from pathlib import Path
 from fda_device_rag.documents.pdf_document import extract_pdf_text
 from fda_device_rag.chunking.pdf_chunker import chunk_pdf_text
 from fda_device_rag.eval.sampling import (
+    check_section_diversity,
     sample_recall_candidates,
     sample_event_candidates,
     sample_pdf_section_candidates,
@@ -86,6 +87,13 @@ def main() -> None:
     ifu_candidates, ifu_skips = _sample_pdf_group(
         IFU_DOCS, "ifu_pdfs", "ifu_pdf", "ifu", IFU_QUOTA_PER_DOC, retrieved_date, args.seed,
     )
+    # Design doc section 8 step 2: verify no two candidates within the same
+    # document's quota share a section_name label. Runs across guidance and
+    # IFU candidates together, and before any output is written, so a
+    # violation is a hard error rather than a silently-shipped candidates
+    # file.
+    check_section_diversity(guidance_candidates + ifu_candidates)
+
     candidates.extend(guidance_candidates)
     candidates.extend(ifu_candidates)
     skip_log = guidance_skips + ifu_skips

@@ -2,6 +2,8 @@ import pytest
 
 from fda_device_rag.eval.sampling import (
     EmptyCandidatePoolError,
+    SectionDiversityError,
+    check_section_diversity,
     sample_recall_candidates,
     sample_event_candidates,
     sample_pdf_section_candidates,
@@ -179,3 +181,45 @@ def test_sample_pdf_section_candidates_raises_when_pool_too_small_for_quota():
 
     with pytest.raises(EmptyCandidatePoolError):
         sample_pdf_section_candidates("doc", chunks, quota=2, base_seed="test-seed", floor=72)
+
+
+def _pdf_candidate(document_title, section_name, instance_ordinal=1):
+    return {
+        "source_type": "ifu_pdf",
+        "document_title": document_title,
+        "section_name": section_name,
+        "instance_ordinal": instance_ordinal,
+        "text": "some candidate text",
+    }
+
+
+def test_check_section_diversity_raises_when_one_document_has_two_candidates_in_a_section():
+    candidates = [
+        _pdf_candidate("doc-a", "WARNINGS", instance_ordinal=1),
+        _pdf_candidate("doc-a", "MAINTENANCE"),
+        _pdf_candidate("doc-a", "WARNINGS", instance_ordinal=2),
+    ]
+
+    with pytest.raises(SectionDiversityError, match="WARNINGS"):
+        check_section_diversity(candidates)
+
+
+def test_check_section_diversity_accepts_distinct_sections_within_each_document():
+    candidates = [
+        _pdf_candidate("doc-a", "WARNINGS"),
+        _pdf_candidate("doc-a", "MAINTENANCE"),
+        _pdf_candidate("doc-b", "TROUBLESHOOTING"),
+    ]
+
+    assert check_section_diversity(candidates) is None
+
+
+def test_check_section_diversity_allows_the_same_section_name_in_different_documents():
+    # The invariant is per-document: two documents legitimately share
+    # generic heading labels like "WARNINGS", and that is not a violation.
+    candidates = [
+        _pdf_candidate("doc-a", "WARNINGS"),
+        _pdf_candidate("doc-b", "WARNINGS"),
+    ]
+
+    assert check_section_diversity(candidates) is None

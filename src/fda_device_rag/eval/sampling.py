@@ -47,6 +47,32 @@ class EmptyCandidatePoolError(Exception):
     never silently skip a benchmark slot."""
 
 
+class SectionDiversityError(Exception):
+    """Raised when two sampled PDF candidates within the same document
+    share a section_name -- an invariant that should already hold given
+    without-replacement sampling over distinct section instances, but is
+    verified explicitly per design doc section 8 step 2 rather than
+    assumed."""
+
+
+def check_section_diversity(candidates: list[dict]) -> None:
+    """Raises SectionDiversityError if any two candidates sharing the same
+    document_title also share the same section_name. `candidates` is the
+    list of PDF-candidate dicts (each with document_title/section_name
+    keys) produced by sample_pdf_section_candidates for one or more
+    documents."""
+    seen = {}
+    for c in candidates:
+        key = (c["document_title"], c["section_name"])
+        if key in seen:
+            raise SectionDiversityError(
+                f"document {c['document_title']!r} has two candidates sharing "
+                f"section_name {c['section_name']!r} -- section-diversity "
+                f"invariant violated"
+            )
+        seen[key] = c
+
+
 def sample_recall_candidates(records, retrieved_date, base_seed, categories=RECALL_CATEGORIES, floor=RECALL_FLOOR_CHARS):
     """One candidate per category: filter records in `records` matching
     `category` (exact match on root_cause_description) to those whose built
