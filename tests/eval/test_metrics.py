@@ -28,3 +28,43 @@ def test_wilson_interval_bounds_stay_within_0_and_100():
 
 def test_wilson_interval_zero_n_returns_zero_zero():
     assert wilson_interval(0, 0) == (0.0, 0.0)
+
+
+from fda_device_rag.eval.metrics import rank_of_first_gold_hit, hit_at_k, reciprocal_rank
+
+
+def test_rank_of_first_gold_hit_returns_one_indexed_rank():
+    ranked = ["a", "b", "c", "d"]
+    assert rank_of_first_gold_hit(ranked, ["c"]) == 3
+
+
+def test_rank_of_first_gold_hit_returns_earliest_match_with_multi_chunk_gold():
+    ranked = ["a", "b", "c", "d"]
+    # "d" is gold too, but "b" (rank 2) is the best-ranked gold hit
+    assert rank_of_first_gold_hit(ranked, ["d", "b"]) == 2
+
+
+def test_rank_of_first_gold_hit_returns_none_when_absent():
+    ranked = ["a", "b", "c"]
+    assert rank_of_first_gold_hit(ranked, ["z"]) is None
+
+
+def test_hit_at_k_true_within_k():
+    assert hit_at_k(5, k=5) is True
+    assert hit_at_k(1, k=5) is True
+
+
+def test_hit_at_k_false_beyond_k():
+    assert hit_at_k(6, k=5) is False
+
+
+def test_hit_at_k_false_when_rank_is_none():
+    assert hit_at_k(None, k=5) is False
+
+
+def test_reciprocal_rank_of_a_rank():
+    assert reciprocal_rank(4) == pytest.approx(0.25)
+
+
+def test_reciprocal_rank_of_none_is_zero():
+    assert reciprocal_rank(None) == 0.0
