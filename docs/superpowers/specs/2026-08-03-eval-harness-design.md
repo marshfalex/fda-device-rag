@@ -239,16 +239,30 @@ digit, e.g. any heading mentioning `Z-800F`, would inject a spurious digit-run i
 only one half of the comparison). Verified against the full real corpus: 598 eligible
 instances, **41 genuine furniture instances**.
 
-**On the residual 41-vs-51 gap:** not reconciled, and not claimed to be understood.
-Round 3's 51 was produced by a script that no longer exists in inspectable form, so
-this document cannot verify precisely what it was and wasn't counting rather than
-speculate about it. What can be stated with confidence: 41 is the number produced by
-the current rule — skeleton-match on heading-stripped text, computed consistently for
-both the skeleton and the digit-run check — against the corpus as it exists today,
-independently verified in code review (round 5's fix-review cycle, not just the
-original implementation). It is reported as that, not reverse-engineered toward
-matching an earlier, superseded estimate. Five rounds of empirical correction, each
-finding and closing a real, evidence-backed gap, is the point to stop.
+**On the 41-vs-51 gap: it was a real bug in the sampler, now fixed, and the corrected
+count is 51.** An earlier revision of this paragraph reported the gap as "not
+reconciled, and not claimed to be understood." The whole-branch review found the
+cause. The furniture-exclusion helper in `sampling.py` built a map of duplicate
+instances keyed only on the *non-first* members of each cluster: when instance `idx`
+matched an earlier instance `k`, it recorded `idx`, but `k` — the first-seen member,
+the one everything else was compared *against* — was never itself recorded, so it
+survived into the drawable pool. Every furniture cluster therefore left exactly one
+genuine running-footer instance eligible to be sampled as a benchmark candidate. That
+is wrong on the rule's own terms: the furniture predicate is symmetric ("another
+instance in the same document has a matching skeleton and page-number-scale
+digit-runs"), so every member of a 2+ cluster satisfies it equally. "First-seen" is an
+artifact of iteration order over the eligible pool, not a property of the content.
+
+The fix (`_find_furniture_clusters`) groups matching instances into clusters and
+excludes every member of any 2+-member cluster, representative included. Re-verified
+against the full real corpus: 598 eligible instances, **51 genuine furniture
+instances** — the 41 previously flagged plus the 10 cluster representatives that were
+wrongly being left in the pool, one per cluster. 41 + 10 = 51 is exactly round 3's
+original "51 instances in 10 clusters" figure. Round 3's script no longer exists in
+inspectable form, so this document does not claim to explain *why* the two agree to
+the instance; it states the fact plainly: the gap was a bug, the bug is fixed, and the
+corrected count matches round 3's estimate exactly. The sampler still produces 50
+candidates with no `EmptyCandidatePoolError`.
 
 This is the actual lock point: the rule now requires the same evidence every round
 before it demanded — matching content (heading-independent), not just matching shape,

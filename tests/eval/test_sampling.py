@@ -137,19 +137,69 @@ def test_sample_pdf_section_candidates_excludes_instances_under_the_floor():
     assert selected[0].section_name == "WARNINGS"
 
 
-def test_sample_pdf_section_candidates_excludes_furniture_duplicates():
+def _furniture_chunks():
+    """A document with one 2-member furniture cluster (the same footer
+    template recurring under the same heading, differing only in page number)
+    plus one genuinely distinct section."""
     long_body = "A" * 60
-    chunks = [
+    return [
         _pdf_chunk("doc-0", "doc", "MAINTENANCE", f"MAINTENANCE\nZ-800F Instructions for Use.  15 \nP/N 800F-IFU-2602, Rev. O {long_body}"),
         _pdf_chunk("doc-1", "doc", "TROUBLESHOOTING", "TROUBLESHOOTING\nGenuinely distinct real content about troubleshooting alarms."),
         _pdf_chunk("doc-2", "doc", "MAINTENANCE", f"MAINTENANCE\nZ-800F Instructions for Use.  21 \nP/N 800F-IFU-2602, Rev. O {long_body}"),
     ]
 
+
+def test_sample_pdf_section_candidates_excludes_furniture_duplicates():
+    # Both members of the furniture cluster are excluded -- including the
+    # first-seen one, which is only "first" by scan order over the pool.
+    selected, skip_log = sample_pdf_section_candidates("doc", _furniture_chunks(), quota=1, base_seed="test-seed", floor=72)
+
+    assert [i.section_name for i in selected] == ["TROUBLESHOOTING"]
+    assert len(skip_log) == 2
+    assert {entry[0] for entry in skip_log} == {"doc:MAINTENANCE#1", "doc:MAINTENANCE#2"}
+
+
+def test_sample_pdf_section_candidates_furniture_cluster_does_not_backfill_the_quota():
+    # Only one non-furniture instance survives, so a quota of 2 cannot be met
+    # by falling back on a furniture cluster's first-seen representative.
+    with pytest.raises(EmptyCandidatePoolError, match="only 1 non-furniture"):
+        sample_pdf_section_candidates("doc", _furniture_chunks(), quota=2, base_seed="test-seed", floor=72)
+
+
+def test_sample_pdf_section_candidates_excludes_every_member_of_a_three_member_cluster():
+    # Three near-identical running footers (differing only by page number
+    # 1/2/3, all under the same heading) plus one genuinely distinct section.
+    # The whole cluster is undrawable; only the distinct instance is.
+    long_body = "B" * 60
+    chunks = [
+        _pdf_chunk("doc-0", "doc", "FOOTER", f"FOOTER\nAcme 900X Instructions for Use. Page 1 \n{long_body}"),
+        _pdf_chunk("doc-1", "doc", "CLEANING", "CLEANING\nWipe the exterior housing with a soft damp cloth after every use."),
+        _pdf_chunk("doc-2", "doc", "FOOTER", f"FOOTER\nAcme 900X Instructions for Use. Page 2 \n{long_body}"),
+        _pdf_chunk("doc-3", "doc", "CLEANING2", "CLEANING2\nA second distinct section so the pool is not trivially size one."),
+        _pdf_chunk("doc-4", "doc", "FOOTER", f"FOOTER\nAcme 900X Instructions for Use. Page 3 \n{long_body}"),
+    ]
+
     selected, skip_log = sample_pdf_section_candidates("doc", chunks, quota=2, base_seed="test-seed", floor=72)
 
-    section_names = sorted(i.section_name for i in selected)
-    assert section_names == ["MAINTENANCE", "TROUBLESHOOTING"]
-    assert len(skip_log) == 1
+    assert sorted(i.section_name for i in selected) == ["CLEANING", "CLEANING2"]
+    # All three footer instances are logged as skipped, none survive the draw.
+    assert len(skip_log) == 3
+    assert {entry[0] for entry in skip_log} == {"doc:FOOTER#1", "doc:FOOTER#2", "doc:FOOTER#3"}
+    assert not any(i.section_name == "FOOTER" for i in selected)
+
+
+def test_sample_pdf_section_candidates_raises_when_only_a_furniture_cluster_is_eligible():
+    long_body = "C" * 60
+    chunks = [
+        _pdf_chunk("doc-0", "doc", "FOOTER", f"FOOTER\nAcme 900X Instructions for Use. Page 1 \n{long_body}"),
+        # Below the floor, so it never enters the eligible pool -- it only
+        # breaks the contiguous run so the two footers are distinct instances.
+        _pdf_chunk("doc-1", "doc", "TINY", "TINY\nShort."),
+        _pdf_chunk("doc-2", "doc", "FOOTER", f"FOOTER\nAcme 900X Instructions for Use. Page 2 \n{long_body}"),
+    ]
+
+    with pytest.raises(EmptyCandidatePoolError, match="only 0 non-furniture"):
+        sample_pdf_section_candidates("doc", chunks, quota=1, base_seed="test-seed", floor=72)
 
 
 def test_sample_pdf_section_candidates_keeps_distinct_content_sharing_a_digit_template():

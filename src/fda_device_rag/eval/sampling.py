@@ -136,13 +136,18 @@ def sample_event_candidates(records, retrieved_date, base_seed, categories=EVENT
     return results
 
 
-def _flag_furniture(eligible):
-    """Returns {index_of_furniture_instance: index_of_first_instance_it_duplicates}
-    for every instance in `eligible` that is a page-furniture duplicate of an
-    earlier instance in the same list. Computed pool-wide (all pairs against
-    instances kept so far), matching the design doc's full-pool validation
-    methodology -- not scoped to what a live draw has selected so far."""
-    furniture_of = {}
+def _find_furniture_clusters(eligible):
+    """Groups `eligible` instances into page-furniture clusters (2+ mutually
+    matching instances via a first-seen representative), pool-wide -- matching
+    the design doc's full-pool validation methodology, not scoped to what a
+    live draw has selected so far. Returns a list of clusters, each a list of
+    indices into `eligible`, for every cluster with 2 or more members. The
+    furniture rule is symmetric (any member matches any other), so a cluster's
+    first-seen representative is excluded from the drawable pool exactly like
+    every other member -- "first-seen" is an artifact of scan order over
+    `eligible`, not a property that makes that one instance less furniture
+    than its duplicates."""
+    members_of = {}
     kept = []
     for idx, instance in enumerate(eligible):
         match = next(
@@ -155,30 +160,34 @@ def _flag_furniture(eligible):
             None,
         )
         if match is not None:
-            furniture_of[idx] = match
+            members_of.setdefault(match, [match]).append(idx)
         else:
             kept.append(idx)
-    return furniture_of
+    return list(members_of.values())
 
 
 def sample_pdf_section_candidates(document_title, chunks, quota, base_seed, floor=PDF_SECTION_FLOOR_CHARS):
     """Selects `quota` distinct, non-furniture section instances from this
     document's chunks. Furniture exclusion happens before the random draw
-    (pool-wide, per _flag_furniture), then `quota` instances are drawn
-    without replacement from what remains."""
+    (pool-wide, per _find_furniture_clusters; every member of a furniture
+    cluster is excluded, including the cluster's first-seen representative),
+    then `quota` instances are drawn without replacement from what remains."""
     instances = build_section_instances(chunks)
     eligible = [i for i in instances if len(i.text) >= floor]
 
-    furniture_of = _flag_furniture(eligible)
-    skip_log = [
-        (
-            f"{document_title}:{eligible[idx].section_name}#{eligible[idx].instance_ordinal}",
-            f"{document_title}:{eligible[match].section_name}#{eligible[match].instance_ordinal}",
-        )
-        for idx, match in furniture_of.items()
-    ]
+    clusters = _find_furniture_clusters(eligible)
+    furniture_indices = {idx for cluster in clusters for idx in cluster}
 
-    non_furniture = [inst for i, inst in enumerate(eligible) if i not in furniture_of]
+    skip_log = []
+    for cluster in clusters:
+        for idx in cluster:
+            other = next(m for m in cluster if m != idx)
+            skip_log.append((
+                f"{document_title}:{eligible[idx].section_name}#{eligible[idx].instance_ordinal}",
+                f"{document_title}:{eligible[other].section_name}#{eligible[other].instance_ordinal}",
+            ))
+
+    non_furniture = [inst for i, inst in enumerate(eligible) if i not in furniture_indices]
 
     if len(non_furniture) < quota:
         raise EmptyCandidatePoolError(
