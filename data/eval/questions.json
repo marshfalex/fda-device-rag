@@ -1,0 +1,406 @@
+{
+  "version": 1,
+  "frozen_date": "2026-08-04",
+  "questions": [
+    {
+      "question_id": "recall-01",
+      "source_type": "recall",
+      "category": "Process control",
+      "question": "Why was Hobbs Medical's Biliary Pigtail Stent Kit recalled?",
+      "gold": {"record_id": "Z-0041-2023"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-02",
+      "source_type": "recall",
+      "category": "Device Design",
+      "question": "What was the safety concern behind Auris Health's recall of the Monarch Platform?",
+      "gold": {"record_id": "Z-0051-2025"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-03",
+      "source_type": "recall",
+      "category": "Under Investigation by firm",
+      "question": "Why did Randox Laboratories recall its IgE Calibrator Series?",
+      "gold": {"record_id": "Z-0050-2017"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-04",
+      "source_type": "recall",
+      "category": "Other",
+      "question": "Why did Universal Meditech Inc. recall its \"Am I Pregnant?\" HCG pregnancy test?",
+      "gold": {"record_id": "Z-0049-2024"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-05",
+      "source_type": "recall",
+      "category": "Nonconforming Material/Component",
+      "question": "Why did Alcon recall its Custom Pak?",
+      "gold": {"record_id": "Z-0053-2018"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-06",
+      "source_type": "recall",
+      "category": "Employee error",
+      "question": "Why was the Guider Softip Guide Catheter recalled?",
+      "gold": {"record_id": "Z-0016-2024"},
+      "notes": "Source record has a data inconsistency: recalling_firm field says 'Boston Scientific Corporation', but reason_for_recall/action narrative text (the retrievable chunk content) refers to 'Stryker Neurovascular'/'Stryker' throughout. Firm name intentionally omitted from the question to avoid naming a firm absent from retrievable content."
+    },
+    {
+      "question_id": "recall-07",
+      "source_type": "recall",
+      "category": "Software design",
+      "question": "Why was the SOMATOM Definition Flash recalled?",
+      "gold": {"record_id": "Z-0020-2016"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-08",
+      "source_type": "recall",
+      "category": "Material/Component Contamination",
+      "question": "Why did Sterilmed recall its Reprocessed Agilis Steerable Introducer?",
+      "gold": {"record_id": "Z-0090-2019"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-09",
+      "source_type": "recall",
+      "category": "Error in labeling",
+      "question": "Why did CardioQuip recall its Modular Cooler-Heater 1000(i)?",
+      "gold": {"record_id": "Z-0036-2022"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-10",
+      "source_type": "recall",
+      "category": "Packaging process control",
+      "question": "Why was the basixSKY Inflation Device recalled?",
+      "gold": {"record_id": "Z-0071-2025"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-11",
+      "source_type": "recall",
+      "category": "Use error",
+      "question": "Why did GE HealthCare recall its Giraffe OmniBed Carestation?",
+      "gold": {"record_id": "Z-0048-2025"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-12",
+      "source_type": "recall",
+      "category": "Radiation Control for Health and Safety Act",
+      "question": "Why did Advance-Esthetic recall its Zemits NdPrime laser?",
+      "gold": {"record_id": "Z-0095-2024"},
+      "notes": null
+    },
+    {
+      "question_id": "recall-13",
+      "source_type": "recall",
+      "category": "Labeling design",
+      "question": "Why did Leica Biosystems recall its CM1850 cryostat?",
+      "gold": {"record_id": "Z-0087-2025"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-01",
+      "source_type": "maude",
+      "category": "Patient Device Interaction Problem",
+      "question": "What problem was reported with the battery compartment on Medtronic's 640G insulin pump?",
+      "gold": {"record_id": "2032227-2020-110263"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-02",
+      "source_type": "maude",
+      "category": "Adverse Event Without Identified Device or Use Problem",
+      "question": "What complication occurred after this patient's pacemaker implant that led to removal of the pulse generator?",
+      "gold": {"record_id": "2649622-2020-08304"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-03",
+      "source_type": "maude",
+      "category": "Insufficient Device Problem Information",
+      "question": "What allegations were made regarding a patient's Bard Flat Mesh implant?",
+      "gold": {"record_id": "1213643-2020-03987"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-04",
+      "source_type": "maude",
+      "category": "Defective Device",
+      "question": "What problem was reported with the IV tubing's priming plunger?",
+      "gold": {"record_id": "10000321"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-05",
+      "source_type": "maude",
+      "category": "Pumping Stopped",
+      "question": "What malfunction alarm did the customer report to Tandem's technical support?",
+      "gold": {"record_id": "3013756811-2020-40828"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-06",
+      "source_type": "maude",
+      "category": "Mechanical Problem",
+      "question": "Why did this hospital bed lose braking force?",
+      "gold": {"record_id": "0001831750-2020-00364"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-07",
+      "source_type": "maude",
+      "category": "Defective Component",
+      "question": "What was found wrong with the bone pin during this TKA surgery?",
+      "gold": {"record_id": "3010266064-2020-01541"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-08",
+      "source_type": "maude",
+      "category": "No Apparent Adverse Event",
+      "question": "What cosmetic damage was found on this Medtronic insulin pump's reservoir compartment?",
+      "gold": {"record_id": "2032227-2020-110281"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-09",
+      "source_type": "maude",
+      "category": "Material Integrity Problem",
+      "question": "What damage did Medtronic find in this insulin pump's battery cap and compartment?",
+      "gold": {"record_id": "2032227-2020-110295"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-10",
+      "source_type": "maude",
+      "category": "Failure to Power Up",
+      "question": "What issue did a customer report to Physio-Control about their defibrillator powering off during boot-up?",
+      "gold": {"record_id": "0003015876-2020-00560"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-11",
+      "source_type": "maude",
+      "category": "Device Alarm System",
+      "question": "Why did Medtronic's insulin pump fail its audio alarm test?",
+      "gold": {"record_id": "2032227-2020-110253"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-12",
+      "source_type": "maude",
+      "category": "Patient-Device Incompatibility",
+      "question": "Why did a patient undergo revision surgery after receiving a Kugel hernia patch?",
+      "gold": {"record_id": "1213643-2020-03984"},
+      "notes": null
+    },
+    {
+      "question_id": "maude-13",
+      "source_type": "maude",
+      "category": "Device Dislodged or Dislocated",
+      "question": "Why was this patient's pacemaker lead found to be misplaced in the arterial system?",
+      "gold": {"record_id": "2649622-2020-08299"},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-01",
+      "source_type": "guidance",
+      "category": null,
+      "question": "What information does FDA recommend including about dosing algorithms in an infusion pump 510(k) submission?",
+      "gold": {"document_title": "78369", "section_name": "Dosing Algorithms", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-02",
+      "source_type": "guidance",
+      "category": null,
+      "question": "What FDA guidance document does this section reference for home-use device design considerations?",
+      "gold": {"document_title": "78369", "section_name": "Design Considerations", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-03",
+      "source_type": "guidance",
+      "category": null,
+      "question": "Why must clinical investigations of infusion pumps be conducted under an approved investigational device exemption (IDE)?",
+      "gold": {"document_title": "78369", "section_name": "Clinical Investigation", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-04",
+      "source_type": "guidance",
+      "category": null,
+      "question": "What test-case documentation does FDA expect at the 'Limited' testing level?",
+      "gold": {"document_title": "188844", "section_name": "Limited", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-05",
+      "source_type": "guidance",
+      "category": null,
+      "question": "What software functions were assessed as not posing high process risk in this documentation example?",
+      "gold": {"document_title": "188844", "section_name": "Function:", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-06",
+      "source_type": "guidance",
+      "category": null,
+      "question": "When was the table referenced in this guidance section first implemented?",
+      "gold": {"document_title": "188844", "section_name": "Assurance for Production and Quality", "instance_ordinal": 2},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-07",
+      "source_type": "guidance",
+      "category": null,
+      "question": "Which categories of devices does FDA recommend should include Enhanced Documentation in a premarket submission?",
+      "gold": {"document_title": "153781", "section_name": "Contains Nonbinding Recommendations", "instance_ordinal": 6},
+      "notes": "Gold section is one of 153781's known-mislabeled 'Contains Nonbinding Recommendations' instances (section-detection-fix design doc S4; the label is generic boilerplate carried over from PDF extraction, but the underlying chunk text at this instance is real and correct -- see eval-harness design doc S1's explicit inclusion decision)."
+    },
+    {
+      "question_id": "guidance-08",
+      "source_type": "guidance",
+      "category": null,
+      "question": "What does Figure 1 depict in this system architecture example?",
+      "gold": {"document_title": "153781", "section_name": "Device", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-09",
+      "source_type": "guidance",
+      "category": null,
+      "question": "Is FDA guidance legally binding on the public, according to this document's own disclaimer?",
+      "gold": {"document_title": "153781", "section_name": "Food and Drug Administration Staff", "instance_ordinal": 2},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-10",
+      "source_type": "guidance",
+      "category": null,
+      "question": "Does FDA's software validation guidance recommend a specific software life cycle model?",
+      "gold": {"document_title": "73141", "section_name": "4.4.  SOFTWARE LIFE CYCLE", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-11",
+      "source_type": "guidance",
+      "category": null,
+      "question": "What document number should be used to request a copy of this guidance?",
+      "gold": {"document_title": "73141", "section_name": "CDRH", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "guidance-12",
+      "source_type": "guidance",
+      "category": null,
+      "question": "How does the Quality System regulation distinguish between software verification and validation?",
+      "gold": {"document_title": "73141", "section_name": "3.1.2  Verification and Validation", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-01",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What page does the GETTING STARTED section start on in the Z-800F manual?",
+      "gold": {"document_title": "Z-800F_Instructions_for_Use_Rev_O", "section_name": "Table\tof\tContents", "instance_ordinal": 1},
+      "notes": "Gold section is a table-of-contents listing, not substantive device content -- this question tests structural/reference-lookup retrieval, a different capability than the other 49 substantive-content questions. Kept as originally sampled (not swapped for a different Z-800F instance after inspection) to avoid reintroducing the post-hoc cherry-picking the seeded sampling design exists to prevent."
+    },
+    {
+      "question_id": "ifu-02",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What happens if the Z-800F pump detects a paused infusion with no user input for 5 minutes?",
+      "gold": {"document_title": "Z-800F_Instructions_for_Use_Rev_O", "section_name": "The Z-800F Infusion Pump", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-03",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What does the Z-800F pump's manual warn about changing the factory default settings?",
+      "gold": {"document_title": "Z-800F_Instructions_for_Use_Rev_O", "section_name": "3. Press", "instance_ordinal": 4},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-04",
+      "source_type": "ifu",
+      "category": null,
+      "question": "How long does it take the Z-800F pump's battery to fully recharge from empty?",
+      "gold": {"document_title": "Z-800F_Instructions_for_Use_Rev_O", "section_name": "TABLE. Battery Operating", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-05",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What does Intera Oncology warrant about the Intera 3000 Hepatic Artery Infusion Pump?",
+      "gold": {"document_title": "intera-3000-pump-ifu", "section_name": "WARRANTY", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-06",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What safety feature does the Intera 3000 pump use to control bolus delivery?",
+      "gold": {"document_title": "intera-3000-pump-ifu", "section_name": "Description", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-07",
+      "source_type": "ifu",
+      "category": null,
+      "question": "During the Intera 3000 pump's refill procedure, how is correct needle placement verified?",
+      "gold": {"document_title": "intera-3000-pump-ifu", "section_name": "LID", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-08",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What should you do if no fluid returns during the Intera 3000 pump's refill procedure?",
+      "gold": {"document_title": "intera-3000-pump-ifu", "section_name": "TROUBLESHOOTING GUIDE:", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-09",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What is the first step listed for attaching tubing and needles in the FreedomEdge instructions?",
+      "gold": {"document_title": "FreedomEdge_Domestic_IFU_347201_Rev_B", "section_name": "3. Prepare Syringe(s)", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-10",
+      "source_type": "ifu",
+      "category": null,
+      "question": "How do you load a syringe into the FreedomEdge infusion pump?",
+      "gold": {"document_title": "FreedomEdge_Domestic_IFU_347201_Rev_B", "section_name": "8. Flush", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-11",
+      "source_type": "ifu",
+      "category": null,
+      "question": "How long should FreedomEdge pump surfaces remain wet during disinfection?",
+      "gold": {"document_title": "FreedomEdge_Domestic_IFU_347201_Rev_B", "section_name": "Disinfection Procedure:", "instance_ordinal": 1},
+      "notes": null
+    },
+    {
+      "question_id": "ifu-12",
+      "source_type": "ifu",
+      "category": null,
+      "question": "What is the residual volume of the 9 mm Two-Needle Set?",
+      "gold": {"document_title": "FreedomEdge_Domestic_IFU_347201_Rev_B", "section_name": "Two-Needle Sets", "instance_ordinal": 2},
+      "notes": null
+    }
+  ]
+}
