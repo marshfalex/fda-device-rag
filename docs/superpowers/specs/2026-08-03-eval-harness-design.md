@@ -303,26 +303,40 @@ benchmark on the next such change with no signal that it happened.
 `instance_ordinal` is computed from `chunk_pdf_text`'s *chunk* output
 (`section_instances.py`'s `build_section_instances`), not directly from
 `detect_sections`'s section list. `chunk_pdf_text` drops any produced chunk under
-`MIN_CHUNK_CHARS` (40 characters, per the section-detection-fix design). If a section
-between two same-named instances is ever entirely dropped by that filter, the two
-same-named instances become adjacent in the chunk stream and silently merge into one
-`SectionInstance` — shifting every subsequent ordinal for that heading by one. This
-means resolution stability depends on `MIN_CHUNK_CHARS` as well as section detection,
-not on section detection alone as an earlier version of this document claimed.
-Verified directly against the real corpus (comparing `detect_sections`' full section
-list to which sections survive `chunk_pdf_text`'s `MIN_CHUNK_CHARS` filter, checking
-for same-heading pairs that become adjacent only because something between them was
-entirely dropped): **6 such merges across 3 documents** — `153781`
-(`Outcome: Basic Documentation Level`, ×1), `Z-800F_Instructions_for_Use_Rev_O`
+`MIN_CHUNK_CHARS` (40 characters, per the section-detection-fix design). This means
+resolution stability depends on `MIN_CHUNK_CHARS` as well as section detection, not on
+section detection alone as an earlier version of this document claimed, in two ways:
+
+- **Merge:** if a *different-named* section between two same-named instances is
+  entirely dropped, the two same-named instances become adjacent in the chunk stream
+  and silently merge into one `SectionInstance`, shifting every subsequent ordinal for
+  that heading by one.
+- **Shift without merge:** if a same-named instance itself is entirely dropped (e.g.
+  its detected body is only 1-2 characters), every later occurrence of that heading's
+  ordinal shifts down by one even though nothing merged.
+
+Verified directly against the real corpus, tracking each section's original detected
+position explicitly rather than looking it up by content (an earlier attempt at this
+same verification used position-lookup-by-value, which silently returned the wrong
+index whenever two sections had byte-identical content — exactly the kind of thing
+this document's own multi-round furniture-rule debugging should have made this
+document's author check for the first time, not the second): **7 merges across 4
+documents** — `153781` (`Outcome: Basic Documentation Level`, ×1), `188844`
+(`Operations`, ×1 — a 2-character `Contains Nonbinding Recommendations` section drops
+between two `Operations` occurrences), `Z-800F_Instructions_for_Use_Rev_O`
 (`GETTING STARTED`, `Accessory`, ×2), and `FreedomEdge_Domestic_IFU_347201_Rev_B`
-(`Needle Set`, ×3). None of the 6 merged instances were drawn into the frozen
-benchmark's candidate pool (`data/eval/candidates.json`), so this is currently benign,
-but it is a latent hazard for any future re-chunking change: a shifted ordinal
-produces no exception, just a resolved answer to the wrong instance. Not fixed
-here (would require either building instances from `detect_sections` output directly,
-or a corroborating fingerprint stored in the gold locator to hard-error on mismatch —
-both real design changes, deferred since no real question has been authored against
-this schema yet).
+(`Needle Set`, ×3). None of the 7 merged headings are drawn into the frozen benchmark's
+candidate pool (`data/eval/candidates.json`), so the merge-specific hazard is currently
+benign. The shift-without-merge case is broader and not fully enumerated here — at
+least one drawn candidate (`153781 / Contains Nonbinding Recommendations / #6`) sits
+behind a dropped same-named section earlier in the document (confirmed: `153781` has a
+1-character `Contains Nonbinding Recommendations` section among its 30 detected
+occurrences), so its ordinal is already a product of `MIN_CHUNK_CHARS`, not section
+detection alone — not necessarily wrong, but not verifiable as stable against a future
+chunking change either. Not fixed here (would require either building instances from
+`detect_sections` output directly, or a corroborating fingerprint stored in the gold
+locator to hard-error on mismatch — both real design changes, deferred since no real
+question has been authored against this schema yet).
 
 **Resolution failure is a hard, visible error, not a silent skip or a silent miss:** if
 a locator can't be resolved (heading renamed, document dropped, ordinal now
