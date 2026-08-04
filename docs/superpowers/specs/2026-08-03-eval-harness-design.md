@@ -325,14 +325,16 @@ documents** — `153781` (`Outcome: Basic Documentation Level`, ×1), `188844`
 (`Operations`, ×1 — a 2-character `Contains Nonbinding Recommendations` section drops
 between two `Operations` occurrences), `Z-800F_Instructions_for_Use_Rev_O`
 (`GETTING STARTED`, `Accessory`, ×2), and `FreedomEdge_Domestic_IFU_347201_Rev_B`
-(`Needle Set`, ×3). None of the 7 merged headings are drawn into the frozen benchmark's
-candidate pool (`data/eval/candidates.json`), so the merge-specific hazard is currently
-benign. The shift-without-merge case is broader and not fully enumerated here — at
-least one drawn candidate (`153781 / Contains Nonbinding Recommendations / #6`) sits
-behind a dropped same-named section earlier in the document (confirmed: `153781` has a
-1-character `Contains Nonbinding Recommendations` section among its 30 detected
-occurrences), so its ordinal is already a product of `MIN_CHUNK_CHARS`, not section
-detection alone — not necessarily wrong, but not verifiable as stable against a future
+(`Needle Set`, ×3). None of the 5 distinct headings involved in those 7 merges are
+drawn into the frozen benchmark's candidate pool (`data/eval/candidates.json`), so the
+merge-specific hazard is currently benign. The shift-without-merge case is broader —
+checked across all 24 drawn PDF candidates, exactly one has nonzero ordinal drift:
+`153781 / Contains Nonbinding Recommendations / #6` sits behind a dropped same-named
+section earlier in the document (confirmed: `153781` has a 1-character `Contains
+Nonbinding Recommendations` section among its 30 detected occurrences, at the position
+that produces this exact drift), so its ordinal is already a product of
+`MIN_CHUNK_CHARS`, not section detection alone — not necessarily wrong, but not
+verifiable as stable against a future
 chunking change either. Not fixed here (would require either building instances from
 `detect_sections` output directly, or a corroborating fingerprint stored in the gold
 locator to hard-error on mismatch — both real design changes, deferred since no real
