@@ -41,3 +41,17 @@ def hit_at_k(rank: int | None, k: int = 5) -> bool:
 
 def reciprocal_rank(rank: int | None) -> float:
     return 1.0 / rank if rank is not None else 0.0
+
+
+def summarize_hit_rate(ranks: list[int | None], k: int = 5) -> dict:
+    n = len(ranks)
+    hits = sum(1 for r in ranks if hit_at_k(r, k))
+    pct = 100.0 * hits / n if n else 0.0
+    ci = wilson_interval(hits, n)
+    return {"hits": hits, "n": n, "pct": pct, "wilson_ci_95": ci}
+
+
+def summarize_mrr(ranks: list[int | None]) -> float:
+    if not ranks:
+        return 0.0
+    return sum(reciprocal_rank(r) for r in ranks) / len(ranks)

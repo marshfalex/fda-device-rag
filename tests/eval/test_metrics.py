@@ -68,3 +68,35 @@ def test_reciprocal_rank_of_a_rank():
 
 def test_reciprocal_rank_of_none_is_zero():
     assert reciprocal_rank(None) == 0.0
+
+
+from fda_device_rag.eval.metrics import summarize_hit_rate, summarize_mrr
+
+
+def test_summarize_hit_rate_counts_hits_within_k():
+    # ranks: hit, hit, miss (beyond k), miss (absent)
+    ranks = [1, 5, 6, None]
+    summary = summarize_hit_rate(ranks, k=5)
+    assert summary["hits"] == 2
+    assert summary["n"] == 4
+    assert summary["pct"] == pytest.approx(50.0)
+    lo, hi = summary["wilson_ci_95"]
+    assert 0.0 <= lo <= summary["pct"] <= hi <= 100.0
+
+
+def test_summarize_hit_rate_empty_list_is_zero_over_zero():
+    summary = summarize_hit_rate([], k=5)
+    assert summary["hits"] == 0
+    assert summary["n"] == 0
+    assert summary["pct"] == 0.0
+    assert summary["wilson_ci_95"] == (0.0, 0.0)
+
+
+def test_summarize_mrr_averages_reciprocal_ranks():
+    # 1/1, 1/4, 0 (absent) -> mean = (1 + 0.25 + 0) / 3
+    ranks = [1, 4, None]
+    assert summarize_mrr(ranks) == pytest.approx((1.0 + 0.25 + 0.0) / 3)
+
+
+def test_summarize_mrr_empty_list_is_zero():
+    assert summarize_mrr([]) == 0.0
