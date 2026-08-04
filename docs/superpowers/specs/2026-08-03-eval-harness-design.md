@@ -309,10 +309,16 @@ same-named instances become adjacent in the chunk stream and silently merge into
 `SectionInstance` — shifting every subsequent ordinal for that heading by one. This
 means resolution stability depends on `MIN_CHUNK_CHARS` as well as section detection,
 not on section detection alone as an earlier version of this document claimed.
-Verified this is currently benign against the real corpus (`188844` has exactly one
-such case — `Operations` — and the merged instance was not drawn into the frozen
-benchmark), but it is a latent hazard for any future re-chunking change: a shifted
-ordinal produces no exception, just a resolved answer to the wrong instance. Not fixed
+Verified directly against the real corpus (comparing `detect_sections`' full section
+list to which sections survive `chunk_pdf_text`'s `MIN_CHUNK_CHARS` filter, checking
+for same-heading pairs that become adjacent only because something between them was
+entirely dropped): **6 such merges across 3 documents** — `153781`
+(`Outcome: Basic Documentation Level`, ×1), `Z-800F_Instructions_for_Use_Rev_O`
+(`GETTING STARTED`, `Accessory`, ×2), and `FreedomEdge_Domestic_IFU_347201_Rev_B`
+(`Needle Set`, ×3). None of the 6 merged instances were drawn into the frozen
+benchmark's candidate pool (`data/eval/candidates.json`), so this is currently benign,
+but it is a latent hazard for any future re-chunking change: a shifted ordinal
+produces no exception, just a resolved answer to the wrong instance. Not fixed
 here (would require either building instances from `detect_sections` output directly,
 or a corroborating fingerprint stored in the gold locator to hard-error on mismatch —
 both real design changes, deferred since no real question has been authored against
