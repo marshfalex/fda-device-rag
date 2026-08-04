@@ -8,5 +8,6 @@ data/chroma/
 data/manifest.csv
 data/bm25_index.pkl
 data/eval/candidates.json
+data/eval/results.json
 *.egg-info/
 .pytest_cache/
