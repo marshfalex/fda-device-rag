@@ -88,7 +88,7 @@
       "category": "Use error",
       "question": "Why did GE HealthCare recall its Giraffe OmniBed Carestation?",
       "gold": {"record_id": "Z-0048-2025"},
-      "notes": null
+      "notes": "Source record has a data inconsistency: recalling_firm field says 'DATEX--OHMEDA, INC.', but reason_for_recall/action narrative text (the retrievable chunk content) refers to 'GE HealthCare' throughout. 'GE HealthCare' is used in the question because it's the name that actually appears in retrievable content -- same pattern as recall-06's Boston Scientific/Stryker case."
     },
     {
       "question_id": "recall-12",
