@@ -10,12 +10,14 @@ traced back to the source record or document section it came from.
 This is a portfolio project. The design rationale for each decision is written
 up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`](docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md).
 
-> **Status: Phases 1-3 (retrieval pipeline + accuracy benchmark + citation
-> grounding).** What exists today is corpus ingestion, chunking, local
-> embedding, hybrid retrieval, a leakage-safe retrieval-accuracy benchmark,
-> and Ollama-backed grounded answer generation with citation extraction
-> (`scripts/ask.py`). The deployed demo and CI are future phases and are
-> **not** implemented yet.
+> **Status: Phases 1-3 and 5 (retrieval pipeline + accuracy benchmark +
+> citation grounding + CI).** What exists today is corpus ingestion,
+> chunking, local embedding, hybrid retrieval, a leakage-safe
+> retrieval-accuracy benchmark, Ollama-backed grounded answer generation
+> with citation extraction (`scripts/ask.py`), and GitHub Actions CI
+> (lint + tests on every push/PR — badge above, verified green on the
+> first real push, not just written and assumed). The deployed demo is
+> the one remaining phase and is **not** implemented yet.
 
 ## Corpus
 
@@ -201,7 +203,16 @@ grader to fill in.
 
 ```bash
 pytest
+ruff check .
 ```
+
+CI (`.github/workflows/ci.yml`) runs both on every push/PR — `ruff check .`
+gates first, before `pytest`, so a lint failure fails the build without
+paying for the test run. Ruleset is a deliberately scoped `select = ["E",
+"F", "I"]` (pycodestyle errors, pyflakes, isort), with `E501` (line length)
+ignored — this codebase's narrative-comment style was never held to a strict
+column limit, and enforcing one retroactively would be pure reformatting
+churn with no bug-catching value.
 
 The operator scripts (`pull_corpus.py`, `build_index.py`, `query.py`, `ask.py`)
 are otherwise deliberately untested — they are thin network/IO wrappers over
@@ -222,4 +233,4 @@ coverage is partial rather than fully absent.
 | 2 | Leakage-safe retrieval-accuracy benchmark | Done |
 | 3 | Citation grounding / answer generation | Done |
 | 4 | Deployed demo | Planned |
-| 5 | CI | Planned |
+| 5 | CI | Done |

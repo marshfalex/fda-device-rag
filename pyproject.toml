@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.16"]
+dev = ["pytest>=8.0", "ruff>=0.16,<0.17", "numpy>=2.0"]
 
 [tool.ruff]
 target-version = "py311"
