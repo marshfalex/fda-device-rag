@@ -180,6 +180,21 @@ across the three legs on the same 50 questions, rather than relying on
 independent-CI overlap as a proxy — the current comparison is a conservative
 lower bound on significance, not a rejection of a real effect.
 
+**Manual faithfulness spot-check.** Per the architecture doc's §6, a 15-20
+question subset is hand-graded pass/fail on whether the generated answer
+relied only on retrieved content (no automated grading/LLM-judge for v1).
+
+```bash
+python scripts/spot_check_transcripts.py    # -> data/eval/spot_check_transcripts.md (gitignored)
+```
+
+Selects 4 questions per source type (16 total) from the frozen 50 via a
+seeded, stratified draw (`--seed` to override; default seed is fixed and
+documented in the transcript's header for reproducibility), runs each
+through the same retrieve-then-generate pipeline as `ask.py`, and writes a
+markdown transcript with a blank verdict line per question for a human
+grader to fill in.
+
 ## Tests
 
 ```bash
