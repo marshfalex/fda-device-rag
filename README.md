@@ -8,10 +8,11 @@ traced back to the source record or document section it came from.
 This is a portfolio project. The design rationale for each decision is written
 up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`](docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md).
 
-> **Status: Phase 1 (retrieval pipeline) only.** What exists today is corpus
-> ingestion, chunking, local embedding, and hybrid retrieval. Citation
-> grounding, the retrieval-accuracy benchmark, and the deployed demo are
-> future phases and are **not** implemented yet.
+> **Status: Phases 1-2 (retrieval pipeline + accuracy benchmark).** What
+> exists today is corpus ingestion, chunking, local embedding, hybrid
+> retrieval, and a leakage-safe retrieval-accuracy benchmark with results
+> below. Citation grounding, the deployed demo, and CI are future phases and
+> are **not** implemented yet.
 
 ## Corpus
 
@@ -85,6 +86,90 @@ Hybrid retrieval over two legs, fused with **reciprocal rank fusion** (k=60):
 Because the two legs' raw scores are on incomparable scales, `HybridRetriever`
 returns the **RRF fused score**, not the leg-native score.
 
+## Retrieval-accuracy benchmark
+
+A frozen, hand-authored 50-question benchmark (`data/eval/questions.json`) —
+each question grounded in real source content, gold answer resolved by
+locator rather than free text, frozen before any retrieval scoring ran
+against it to avoid leakage. Design rationale:
+[`docs/superpowers/specs/2026-08-03-eval-harness-design.md`](docs/superpowers/specs/2026-08-03-eval-harness-design.md)
+and
+[`docs/superpowers/specs/2026-08-04-eval-runner-design.md`](docs/superpowers/specs/2026-08-04-eval-runner-design.md).
+
+Run it yourself:
+
+```bash
+python scripts/run_eval.py     # scores all 50 questions -> data/eval/results.json (gitignored)
+```
+
+**Corpus size at benchmark time:**
+
+| Source | Documents | Chunks |
+|---|---|---|
+| Recall | 500 | 500 |
+| MAUDE | 500 | 500 |
+| Guidance (PDF) | 4 | 456 |
+| IFU (PDF) | 3 | 392 |
+
+Recall/MAUDE documents equal chunks by construction (one record → one
+chunk); Guidance/IFU document counts are distinct-document counts, which is
+why they diverge from chunk counts there. The Guidance/IFU chunk counts
+still carry a known residual noise source from chunking: on 2 of the 7
+PDF documents (`188844`, `153781`), a repeated boilerplate section label
+(`Contains Nonbinding Recommendations`) accounts for **40-41%** of that
+document's indexed chunks — a repeated running-footer/label artifact, not
+duplicated real content (see
+[`docs/superpowers/specs/2026-07-29-section-detection-title-case-fix-design.md`](docs/superpowers/specs/2026-07-29-section-detection-title-case-fix-design.md)
+§4 for why this wasn't suppressed: doing so would have merged genuinely
+distinct worked examples elsewhere in the same corpus). The other 5
+documents' repeated-label share is 5-12%. Raw chunk counts above should be
+read with this in mind — they overstate unique content in guidance/IFU by
+roughly this margin on the two affected documents.
+
+**Pooled results (n=50 per leg):**
+
+| Leg | Hit Rate@5 | 95% CI | MRR |
+|---|---|---|---|
+| Dense-only | 38/50 (76.0%) | [62.6, 85.7] | 0.638 |
+| BM25-only | 39/50 (78.0%) | [64.8, 87.2] | 0.630 |
+| Hybrid (RRF) | 43/50 (86.0%) | [73.8, 93.0] | 0.657 |
+
+**Per source type:**
+
+| Stratum (n) | Dense | BM25 | Hybrid |
+|---|---|---|---|
+| Recall (13) | 84.6% [57.8, 95.7] | 92.3% [66.7, 98.6] | 100.0% [77.2, 100.0] |
+| MAUDE (13) | 84.6% [57.8, 95.7] | 84.6% [57.8, 95.7] | 100.0% [77.2, 100.0] |
+| Guidance (12) | 83.3% [55.2, 95.3] | 75.0% [46.8, 91.1] | 91.7% [64.6, 98.5] |
+| IFU (12) | 50.0% [25.4, 74.6] | 58.3% [32.0, 80.7] | 50.0% [25.4, 74.6] |
+
+**Reading these results:** on this benchmark, hybrid retrieval had the
+highest pooled point estimate (86.0% Hit Rate@5 vs. 78.0% BM25-only and
+76.0% dense-only), and led the point estimate in 3 of 4 strata (recall,
+MAUDE, guidance) while tying dense and trailing BM25 in the IFU stratum.
+However, at n=50 pooled — and more so at n=12-13 per stratum — the 95%
+Wilson intervals for all three legs overlap substantially at every level of
+aggregation. The data does not support a statistically significant claim
+that hybrid outperforms either single-leg baseline; it supports a
+directional signal only, consistent with the point estimates but well
+within the noise band this sample size produces. A larger benchmark (or a
+paired/bootstrap significance test across the same 50 questions, rather
+than comparing independent CIs, since all three legs score identical
+questions and are not independent samples — the comparison used here is
+conservative in that respect) would be needed before "hybrid wins" could be
+stated as a settled result.
+
+MRR has no confidence interval — it's a mean of reciprocal ranks over the
+full ranking, not a binomial proportion, so it's reported alongside Hit
+Rate@5 as a directional signal only, not with the same statistical
+precision.
+
+**Future work, if this benchmark is revisited:** run a paired significance
+test (e.g. McNemar's test or a bootstrap over per-question hit/miss pairs)
+across the three legs on the same 50 questions, rather than relying on
+independent-CI overlap as a proxy — the current comparison is a conservative
+lower bound on significance, not a rejection of a real effect.
+
 ## Tests
 
 ```bash
@@ -103,7 +188,7 @@ worth pinning directly.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Retrieval pipeline (ingest → chunk → embed → hybrid retrieve) | Done |
-| 2 | Leakage-safe retrieval-accuracy benchmark | Planned |
+| 2 | Leakage-safe retrieval-accuracy benchmark | Done |
 | 3 | Citation grounding / answer generation | Planned |
 | 4 | Deployed demo | Planned |
 | 5 | CI | Planned |
