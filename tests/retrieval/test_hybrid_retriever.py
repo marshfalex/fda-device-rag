@@ -1,7 +1,10 @@
 import pytest
 
-from fda_device_rag.models import ScoredChunk, ChunkMetadata
-from fda_device_rag.retrieval.hybrid_retriever import reciprocal_rank_fusion, HybridRetriever
+from fda_device_rag.models import ChunkMetadata, ScoredChunk
+from fda_device_rag.retrieval.hybrid_retriever import (
+    HybridRetriever,
+    reciprocal_rank_fusion,
+)
 
 
 def test_reciprocal_rank_fusion_ranks_items_in_both_lists_highest():

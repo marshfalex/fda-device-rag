@@ -8,12 +8,12 @@ import json
 import pickle
 from pathlib import Path
 
-from fda_device_rag.documents.structured import recall_to_chunk, event_to_chunk
-from fda_device_rag.documents.pdf_document import extract_pdf_text
 from fda_device_rag.chunking.pdf_chunker import chunk_pdf_text
+from fda_device_rag.documents.pdf_document import extract_pdf_text
+from fda_device_rag.documents.structured import event_to_chunk, recall_to_chunk
 from fda_device_rag.embedding.embedder import Embedder
-from fda_device_rag.store.chroma_store import ChromaStore
 from fda_device_rag.retrieval.bm25_index import BM25Index
+from fda_device_rag.store.chroma_store import ChromaStore
 
 DATA_DIR = Path("data/raw")
 CHROMA_DIR = Path("data/chroma")

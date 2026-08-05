@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from fda_device_rag.documents.pdf_document import extract_pdf_text
 

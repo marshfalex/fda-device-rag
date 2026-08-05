@@ -13,13 +13,13 @@ import argparse
 import json
 from pathlib import Path
 
-from fda_device_rag.documents.pdf_document import extract_pdf_text
 from fda_device_rag.chunking.pdf_chunker import chunk_pdf_text
+from fda_device_rag.documents.pdf_document import extract_pdf_text
 from fda_device_rag.eval.sampling import (
     check_section_diversity,
-    sample_recall_candidates,
     sample_event_candidates,
     sample_pdf_section_candidates,
+    sample_recall_candidates,
 )
 
 DATA_DIR = Path("data/raw")

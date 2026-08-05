@@ -6,10 +6,10 @@ import pytest
 
 from fda_device_rag.eval.gold_resolution import (
     GoldResolutionError,
-    resolve_structured_gold,
-    resolve_pdf_gold_from_text,
-    resolve_gold,
     _find_pdf_path,
+    resolve_gold,
+    resolve_pdf_gold_from_text,
+    resolve_structured_gold,
 )
 from fda_device_rag.eval.questions import Question
 

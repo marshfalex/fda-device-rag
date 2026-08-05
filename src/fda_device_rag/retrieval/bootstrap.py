@@ -1,6 +1,6 @@
+import pickle
 from dataclasses import dataclass
 from pathlib import Path
-import pickle
 
 from fda_device_rag.embedding.embedder import Embedder
 from fda_device_rag.retrieval.bm25_index import BM25Index

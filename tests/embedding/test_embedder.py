@@ -1,8 +1,8 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from fda_device_rag.embedding.embedder import Embedder, QUERY_PREFIX
+from fda_device_rag.embedding.embedder import QUERY_PREFIX, Embedder
 
 
 @patch("fda_device_rag.embedding.embedder.SentenceTransformer")

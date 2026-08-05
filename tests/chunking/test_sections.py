@@ -1,4 +1,4 @@
-from fda_device_rag.chunking.sections import Section, detect_sections
+from fda_device_rag.chunking.sections import detect_sections
 
 
 def test_detect_sections_splits_on_all_caps_headings():

@@ -1,5 +1,6 @@
-from fda_device_rag.eval.questions import Question
 from spot_check_transcripts import select_spot_check_questions
+
+from fda_device_rag.eval.questions import Question
 
 
 def _question(question_id, source_type):

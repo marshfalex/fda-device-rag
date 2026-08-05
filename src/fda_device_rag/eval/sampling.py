@@ -1,8 +1,8 @@
 import random
 
-from fda_device_rag.documents.structured import recall_to_chunk, event_to_chunk
-from fda_device_rag.eval.section_instances import build_section_instances
+from fda_device_rag.documents.structured import event_to_chunk, recall_to_chunk
 from fda_device_rag.eval.furniture import is_page_furniture
+from fda_device_rag.eval.section_instances import build_section_instances
 
 RECALL_FLOOR_CHARS = 100
 EVENT_FLOOR_CHARS = 100

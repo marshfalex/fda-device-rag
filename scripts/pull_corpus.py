@@ -18,8 +18,8 @@ import datetime
 import json
 from pathlib import Path
 
-from fda_device_rag.ingestion.openfda_client import fetch_recalls, fetch_events
 from fda_device_rag.ingestion.manifest import ManifestEntry, ManifestWriter
+from fda_device_rag.ingestion.openfda_client import fetch_events, fetch_recalls
 from fda_device_rag.ingestion.pdf_fetch import download_pdfs
 
 # Hand-curated, defensible list -- each URL was chosen and verified live

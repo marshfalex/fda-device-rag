@@ -1,7 +1,13 @@
-import math
 import pytest
 
-from fda_device_rag.eval.metrics import wilson_interval
+from fda_device_rag.eval.metrics import (
+    hit_at_k,
+    rank_of_first_gold_hit,
+    reciprocal_rank,
+    summarize_hit_rate,
+    summarize_mrr,
+    wilson_interval,
+)
 
 
 def test_wilson_interval_matches_reference_values():
@@ -28,9 +34,6 @@ def test_wilson_interval_bounds_stay_within_0_and_100():
 
 def test_wilson_interval_zero_n_returns_zero_zero():
     assert wilson_interval(0, 0) == (0.0, 0.0)
-
-
-from fda_device_rag.eval.metrics import rank_of_first_gold_hit, hit_at_k, reciprocal_rank
 
 
 def test_rank_of_first_gold_hit_returns_one_indexed_rank():
@@ -68,9 +71,6 @@ def test_reciprocal_rank_of_a_rank():
 
 def test_reciprocal_rank_of_none_is_zero():
     assert reciprocal_rank(None) == 0.0
-
-
-from fda_device_rag.eval.metrics import summarize_hit_rate, summarize_mrr
 
 
 def test_summarize_hit_rate_counts_hits_within_k():

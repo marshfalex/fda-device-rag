@@ -1,6 +1,6 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from fda_device_rag.ingestion.openfda_client import fetch_recalls, fetch_events
+from fda_device_rag.ingestion.openfda_client import fetch_events, fetch_recalls
 
 
 @patch("fda_device_rag.ingestion.openfda_client.requests.get")

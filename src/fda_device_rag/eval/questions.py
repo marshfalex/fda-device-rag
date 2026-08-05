@@ -1,6 +1,6 @@
+import json
 from dataclasses import dataclass
 from pathlib import Path
-import json
 
 VALID_SOURCE_TYPES = {"recall", "maude", "guidance", "ifu"}
 REQUIRED_FIELDS = ("question_id", "source_type", "question", "gold")

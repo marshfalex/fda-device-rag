@@ -1,9 +1,12 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 
-from fda_device_rag.generation.ollama_client import OllamaNotReadyError, check_ollama_ready
+from fda_device_rag.generation.ollama_client import (
+    OllamaNotReadyError,
+    check_ollama_ready,
+)
 
 
 @patch("fda_device_rag.generation.ollama_client.requests.get")

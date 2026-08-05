@@ -1,4 +1,4 @@
-from fda_device_rag.documents.structured import recall_to_chunk, event_to_chunk
+from fda_device_rag.documents.structured import event_to_chunk, recall_to_chunk
 
 
 def test_recall_to_chunk_builds_templated_text():

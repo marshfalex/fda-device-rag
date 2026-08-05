@@ -4,9 +4,9 @@ from fda_device_rag.eval.sampling import (
     EmptyCandidatePoolError,
     SectionDiversityError,
     check_section_diversity,
-    sample_recall_candidates,
     sample_event_candidates,
     sample_pdf_section_candidates,
+    sample_recall_candidates,
 )
 from fda_device_rag.models import Chunk, ChunkMetadata
 

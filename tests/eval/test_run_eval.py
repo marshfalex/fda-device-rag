@@ -1,6 +1,6 @@
-from fda_device_rag.eval.gold_resolution import GoldResolutionError
-
 from run_eval import _score_all
+
+from fda_device_rag.eval.gold_resolution import GoldResolutionError
 
 
 class _FakeQuestion:
