@@ -37,13 +37,16 @@ def check_ollama_ready(base_url: str, model: str) -> None:
     try:
         response = requests.get(f"{base_url}/api/tags", timeout=5)
         response.raise_for_status()
-    except requests.RequestException:
+        # Ollama's /api/tags returns tags with an explicit version, e.g.
+        # "llama3:latest" -- match on the name before ':' so a bare "llama3"
+        # check still matches whatever tag is actually pulled.
+        pulled = {m["name"].split(":")[0] for m in response.json().get("models", [])}
+    except (requests.RequestException, ValueError, KeyError):
+        # ValueError covers response.json()'s JSONDecodeError (a subclass);
+        # KeyError covers a models entry missing "name" -- either way, a
+        # live-but-malformed response is just as not-ready as no response.
         raise OllamaNotReadyError("Ollama not running. Start it, then retry.")
 
-    # Ollama's /api/tags returns tags with an explicit version, e.g.
-    # "llama3:latest" -- match on the name before ':' so a bare "llama3"
-    # check still matches whatever tag is actually pulled.
-    pulled = {m["name"].split(":")[0] for m in response.json().get("models", [])}
     if model not in pulled:
         raise OllamaNotReadyError(f"Model {model!r} not found. Run: ollama pull {model}")
 

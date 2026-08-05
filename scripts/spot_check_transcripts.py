@@ -79,7 +79,7 @@ def _render_transcript(seed: str, entries: list[dict]) -> str:
         lines.append("")
         lines.append(f"**{entry['citation_label']}:**")
         for chunk in entry["citations"]:
-            lines.append(f"- {_format_chunk_line(chunk)}")
+            lines.append(f"- {_format_chunk_line(chunk)} -- {chunk.metadata.source_url}")
         lines.append("")
         lines.append("**Verdict (pass/fail):** ")
         lines.append("")
@@ -132,6 +132,10 @@ def main() -> None:
             "citations": citations,
             "citation_label": citation_label,
         })
+
+    if not entries:
+        print(f"All {len(selected)} questions failed generation -- no transcript written.")
+        sys.exit(1)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(_render_transcript(args.seed, entries), encoding="utf-8")

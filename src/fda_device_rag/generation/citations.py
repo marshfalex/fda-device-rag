@@ -13,8 +13,11 @@ from fda_device_rag.models import ScoredChunk
 
 
 def extract_citations(answer_text: str, chunk_map: dict[int, ScoredChunk]) -> tuple[list[ScoredChunk], str]:
+    # \d matches a single digit only, so citation numbers >= 10 wouldn't be
+    # recognized -- not expected given TOP_K = 5 everywhere in this codebase,
+    # but worth flagging if TOP_K ever grows past 9.
     cited_nums = {int(n) for n in re.findall(r'\[(\d)\]', answer_text)}
-    citations = [chunk_map[n] for n in cited_nums if n in chunk_map]
+    citations = [chunk_map[n] for n in sorted(cited_nums) if n in chunk_map]
     if not citations:
         # The model sometimes skips the bracket format entirely -- fall back
         # to showing all context provided, honestly labeled as unverified.

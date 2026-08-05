@@ -75,7 +75,6 @@ python scripts/ask.py "Which infusion pumps were recalled for battery failure?" 
   `data/bm25_index.pkl`. It upserts, so re-running after a corpus change
   refreshes existing entries rather than leaving stale vectors behind.
 - `query.py` loads both indices and prints the top 5 hybrid-retrieval results.
-
 - `ask.py` retrieves the top-5 chunks via the same hybrid retriever, generates
   a grounded answer with llama3 via a local Ollama server, and prints the
   answer alongside two separately labeled citation lists: **"context
@@ -201,12 +200,16 @@ grader to fill in.
 pytest
 ```
 
-The operator scripts (`pull_corpus.py`, `build_index.py`, `query.py`) are
-otherwise deliberately untested — they are thin network/IO wrappers over the
-library code in `src/fda_device_rag/`, which is where most test coverage
+The operator scripts (`pull_corpus.py`, `build_index.py`, `query.py`, `ask.py`)
+are otherwise deliberately untested — they are thin network/IO wrappers over
+the library code in `src/fda_device_rag/`, which is where most test coverage
 lives. The one exception is `pull_corpus.py`'s `_fetch_paginated` cross-page
 dedup logic (`tests/test_pull_corpus.py`), which is plain enough logic to be
-worth pinning directly.
+worth pinning directly. `spot_check_transcripts.py` follows the same
+untested-CLI reasoning for its batch/generation loop, but its
+`select_spot_check_questions` selection function is plain enough logic to
+have its own unit tests (`tests/eval/test_spot_check_transcripts.py`), so its
+coverage is partial rather than fully absent.
 
 ## Roadmap
 
