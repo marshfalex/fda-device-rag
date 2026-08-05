@@ -1,5 +1,7 @@
 # FDA Device RAG
 
+[![CI](https://github.com/marshfalex/fda-device-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/marshfalex/fda-device-rag/actions/workflows/ci.yml)
+
 A Q&A system over public FDA medical-device documentation — device recalls,
 adverse event reports (MAUDE), FDA guidance documents, and manufacturer
 Instructions for Use (IFUs) — with citation grounding, so every answer can be
@@ -8,11 +10,12 @@ traced back to the source record or document section it came from.
 This is a portfolio project. The design rationale for each decision is written
 up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`](docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md).
 
-> **Status: Phases 1-2 (retrieval pipeline + accuracy benchmark).** What
-> exists today is corpus ingestion, chunking, local embedding, hybrid
-> retrieval, and a leakage-safe retrieval-accuracy benchmark with results
-> below. Citation grounding, the deployed demo, and CI are future phases and
-> are **not** implemented yet.
+> **Status: Phases 1-3 (retrieval pipeline + accuracy benchmark + citation
+> grounding).** What exists today is corpus ingestion, chunking, local
+> embedding, hybrid retrieval, a leakage-safe retrieval-accuracy benchmark,
+> and Ollama-backed grounded answer generation with citation extraction
+> (`scripts/ask.py`). The deployed demo and CI are future phases and are
+> **not** implemented yet.
 
 ## Corpus
 
@@ -217,6 +220,6 @@ coverage is partial rather than fully absent.
 |---|---|---|
 | 1 | Retrieval pipeline (ingest → chunk → embed → hybrid retrieve) | Done |
 | 2 | Leakage-safe retrieval-accuracy benchmark | Done |
-| 3 | Citation grounding / answer generation | Planned |
+| 3 | Citation grounding / answer generation | Done |
 | 4 | Deployed demo | Planned |
 | 5 | CI | Planned |
