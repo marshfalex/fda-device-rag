@@ -134,7 +134,7 @@ def main() -> None:
         })
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(_render_transcript(args.seed, entries))
+    OUTPUT_PATH.write_text(_render_transcript(args.seed, entries), encoding="utf-8")
 
     print(f"Wrote {len(entries)}/{len(selected)} transcripts (seed={args.seed!r}) -> {OUTPUT_PATH}")
 
