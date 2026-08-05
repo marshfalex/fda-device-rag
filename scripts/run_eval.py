@@ -75,6 +75,20 @@ def _corpus_size(bm25_index: BM25Index) -> dict:
     return sizes
 
 
+def _score_all(questions, scorer) -> tuple[list[dict], list[dict]]:
+    """Partitions questions into per_question entries and resolution_errors.
+    A GoldResolutionError from `scorer` excludes that question from
+    per_question entirely -- it must never appear there with a null rank."""
+    per_question = []
+    resolution_errors = []
+    for question in questions:
+        try:
+            per_question.append(scorer(question))
+        except GoldResolutionError as e:
+            resolution_errors.append({"question_id": question.question_id, "error": str(e)})
+    return per_question, resolution_errors
+
+
 def _score_question(question, bm25_index, dense_store, hybrid_retriever, embedder, corpus_total: int) -> dict:
     """Raises GoldResolutionError if the question's gold locator can't be
     resolved -- the caller must catch this and record it as a resolution
@@ -126,6 +140,11 @@ def _render_summary(results: dict) -> str:
     for source_type in SOURCE_TYPES:
         sizes = results["corpus_size"][source_type]
         lines.append(f"  {source_type}: {sizes['documents']} documents, {sizes['chunks']} chunks")
+    lines.append(
+        "  (recall/maude documents == chunks by construction -- one record "
+        "yields one chunk there, so this is not a bug; guidance/ifu documents "
+        "are a distinct-title count, which is why they differ from chunks)"
+    )
 
     if results["resolution_errors"]:
         lines.append("")
@@ -197,15 +216,10 @@ def main() -> None:
     corpus_size = _corpus_size(bm25_index)
     corpus_total = len(bm25_index._chunks)
 
-    per_question = []
-    resolution_errors = []
-    for question in questions:
-        try:
-            per_question.append(
-                _score_question(question, bm25_index, dense_store, hybrid_retriever, embedder, corpus_total)
-            )
-        except GoldResolutionError as e:
-            resolution_errors.append({"question_id": question.question_id, "error": str(e)})
+    per_question, resolution_errors = _score_all(
+        questions,
+        lambda q: _score_question(q, bm25_index, dense_store, hybrid_retriever, embedder, corpus_total),
+    )
 
     gold_set_size_outliers = [
         {"question_id": pq["question_id"], "gold_set_size": pq["gold_set_size"]}
