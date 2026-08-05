@@ -4,13 +4,10 @@
 
 Usage: python scripts/query.py "<question>"
 """
-import pickle
 import sys
 from pathlib import Path
 
-from fda_device_rag.embedding.embedder import Embedder
-from fda_device_rag.store.chroma_store import ChromaStore
-from fda_device_rag.retrieval.hybrid_retriever import HybridRetriever
+from fda_device_rag.retrieval.bootstrap import load_retrieval_stack
 
 CHROMA_DIR = Path("data/chroma")
 BM25_INDEX_PATH = Path("data/bm25_index.pkl")
@@ -30,15 +27,8 @@ def main() -> None:
               f"scripts/pull_corpus.py then scripts/build_index.py first.")
         sys.exit(1)
 
-    # Safe: this pickle is a local build artifact written by build_index.py on
-    # this machine, never fetched or accepted from an external source. (It holds
-    # a BM25Okapi object with fitted corpus statistics, not plain data, which is
-    # why it is pickled rather than serialized to JSON.)
-    bm25 = pickle.loads(BM25_INDEX_PATH.read_bytes())
-    store = ChromaStore(persist_dir=str(CHROMA_DIR))
-    retriever = HybridRetriever(dense_store=store, bm25_index=bm25, embedder=Embedder())
-
-    results = retriever.retrieve(query_text, top_k=TOP_K)
+    stack = load_retrieval_stack(CHROMA_DIR, BM25_INDEX_PATH)
+    results = stack.hybrid_retriever.retrieve(query_text, top_k=TOP_K)
 
     print(f'Query: {query_text}')
     print(f"Top {len(results)} results (score = RRF fused rank score):\n")

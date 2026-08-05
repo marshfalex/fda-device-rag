@@ -13,11 +13,9 @@ Usage: python scripts/run_eval.py
 """
 import datetime
 import json
-import pickle
 import sys
 from pathlib import Path
 
-from fda_device_rag.embedding.embedder import Embedder
 from fda_device_rag.eval.freeze_check import FrozenFileError, assert_frozen_and_get_hash
 from fda_device_rag.eval.gold_resolution import GoldResolutionError, resolve_gold
 from fda_device_rag.eval.metrics import (
@@ -28,8 +26,7 @@ from fda_device_rag.eval.metrics import (
 )
 from fda_device_rag.eval.questions import load_questions
 from fda_device_rag.retrieval.bm25_index import BM25Index
-from fda_device_rag.retrieval.hybrid_retriever import HybridRetriever
-from fda_device_rag.store.chroma_store import ChromaStore
+from fda_device_rag.retrieval.bootstrap import load_retrieval_stack
 
 DATA_DIR = Path("data/raw")
 CHROMA_DIR = Path("data/chroma")
@@ -204,14 +201,11 @@ def main() -> None:
 
     questions = load_questions(QUESTIONS_PATH)
 
-    # Safe: this pickle is a local build artifact written by build_index.py on
-    # this machine, never fetched or accepted from an external source. (It holds
-    # a BM25Okapi object with fitted corpus statistics, not plain data, which is
-    # why it is pickled rather than serialized to JSON.)
-    bm25_index = pickle.loads(BM25_INDEX_PATH.read_bytes())
-    dense_store = ChromaStore(persist_dir=str(CHROMA_DIR))
-    embedder = Embedder()
-    hybrid_retriever = HybridRetriever(dense_store=dense_store, bm25_index=bm25_index, embedder=embedder)
+    stack = load_retrieval_stack(CHROMA_DIR, BM25_INDEX_PATH)
+    bm25_index = stack.bm25_index
+    dense_store = stack.dense_store
+    embedder = stack.embedder
+    hybrid_retriever = stack.hybrid_retriever
 
     corpus_size = _corpus_size(bm25_index)
     corpus_total = len(bm25_index._chunks)
