@@ -64,6 +64,7 @@ pip install -e ".[dev]"
 python scripts/pull_corpus.py              # fetch corpus -> data/raw/ + data/manifest.csv
 python scripts/build_index.py              # chunk, embed, build Chroma + BM25 indices
 python scripts/query.py "Which infusion pumps were recalled for battery failure?"
+python scripts/ask.py "Which infusion pumps were recalled for battery failure?"   # retrieve + generate a grounded, cited answer (requires Ollama running with llama3 pulled)
 ```
 
 - `pull_corpus.py` writes raw JSON/PDFs to `data/raw/`, logs every source to
@@ -74,6 +75,15 @@ python scripts/query.py "Which infusion pumps were recalled for battery failure?
   `data/bm25_index.pkl`. It upserts, so re-running after a corpus change
   refreshes existing entries rather than leaving stale vectors behind.
 - `query.py` loads both indices and prints the top 5 hybrid-retrieval results.
+
+- `ask.py` retrieves the top-5 chunks via the same hybrid retriever, generates
+  a grounded answer with llama3 via a local Ollama server, and prints the
+  answer alongside two separately labeled citation lists: **"context
+  provided"** (the full top-5, always shown) and **"cited by the model"**
+  (only the bracket-numbered passages the model actually referenced in its
+  answer — falls back to showing all context, honestly labeled, if the model
+  skips the bracket format). Requires Ollama running locally with `llama3`
+  pulled (`ollama pull llama3`); exits with a specific message if it isn't.
 
 ## Retrieval design
 
