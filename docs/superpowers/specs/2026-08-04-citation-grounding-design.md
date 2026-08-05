@@ -45,10 +45,12 @@ handling, and how the manual faithfulness spot-check gets tooled.
   - `generate(prompt, base_url, model, keep_alive="30m", timeout=60) -> str` —
     POSTs to `/api/generate` (non-streaming), sets `"keep_alive": "30m"` in the
     body per the architecture doc's demo-reliability note. Wraps the call in
-    try/except; any failure (timeout, connection drop, non-200) re-raises as
-    `OllamaGenerationError` with a generic fallback message, so callers have one
-    exception type to handle regardless of *when* the failure occurred relative
-    to the pre-flight check.
+    try/except; any failure (timeout, connection drop, non-200) raises
+    `OllamaGenerationError` with a generic fallback message — kept distinct
+    from `OllamaNotReadyError` so a mid-request failure (passed the pre-flight
+    check, then Ollama crashed or timed out) stays distinguishable from a
+    pre-flight failure. `ask.py` still only needs one catch site, via the
+    shared `OllamaError` base (see §3).
 - `prompt.py`
   - `build_prompt(question, chunks: list[ScoredChunk]) -> tuple[str, dict[int, ScoredChunk]]`
     — renders the architecture doc's `SYSTEM_PROMPT` with the chunks numbered
@@ -76,9 +78,9 @@ handling, and how the manual faithfulness spot-check gets tooled.
 **New `scripts/ask.py`** — end-to-end CLI:
 
 ```
-load_retrieval_stack()
+check_ollama_ready(base_url, model)             [exits 1 with the specific message on OllamaError]
+  → load_retrieval_stack()
   → hybrid_retriever.retrieve(question, top_k=5)
-  → check_ollama_ready(base_url, model)          [exits 1 with the specific message on OllamaError]
   → build_prompt(question, chunks)
   → generate(prompt, ...)                         [exits 1 with a fallback message on OllamaError]
   → extract_citations(answer_text, chunk_map)
@@ -86,6 +88,11 @@ load_retrieval_stack()
            "cited by the model" (source_url/document_title/section_name per citation),
            "context provided" (always, full top-5, labeled distinctly)
 ```
+
+`check_ollama_ready` runs first, before paying for index load/embedding/
+retrieval — Ollama being down is flagged as the likely demo-day failure mode,
+and retrieval has no dependency on it, so failing fast here is the entire
+point of the pre-flight check.
 
 Usage: `python scripts/ask.py "<question>"` — mirrors `query.py`'s CLI shape.
 `query.py` itself is **not** modified into a dual-mode tool — its value
@@ -130,10 +137,12 @@ doc's existing "no automation" decision).
   generation-pipeline change) draw a different deterministic subset instead of
   either always regrading the same 16 questions or falling back to
   non-reproducible randomness.
-- Runs each selected question through the exact same
-  `load_retrieval_stack` → `retrieve` → `check_ollama_ready` → `build_prompt` →
-  `generate` → `extract_citations` pipeline `ask.py` uses — zero duplicated
-  logic between the two scripts.
+- Calls `check_ollama_ready` and `load_retrieval_stack` once up front (same
+  fail-fast rationale as `ask.py` — no point loading the index and retrieving
+  for 16 questions only to find Ollama unreachable on the first `generate`
+  call), then runs each selected question through the same `retrieve` →
+  `build_prompt` → `generate` → `extract_citations` sequence `ask.py` uses per
+  question — zero duplicated logic between the two scripts.
 - Writes `data/eval/spot_check_transcripts.md` — gitignored and overwritten per
   run, same convention as `results.json` (commit a specific run's transcript
   only when it's actually being cited, e.g. as evidence of a completed grading
