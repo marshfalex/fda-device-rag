@@ -74,6 +74,33 @@ second hand-maintained list:
   the same gate that already catches lint/test regressions, rather than
   silently shipping a stale file to the next deploy.
 
+**The transformation logic itself needs its own unit tests, separate from
+the `--check` mechanism.** `--check` only proves the committed
+`requirements.txt` matches what the script *currently* generates — if the
+generation logic itself has a bug (e.g. silently drops the `demo` extras,
+mis-parses a version specifier, misses a core dependency), both sides of
+that comparison share the same buggy code path and CI stays green while
+still shipping a wrong `requirements.txt`, exactly the failure this whole
+mechanism exists to prevent. This is the same category of risk this
+project has already twice decided is worth pinning directly with tests
+(`pull_corpus.py`'s `_fetch_paginated` dedup logic; `check_ollama_ready`'s
+three-state branching) — plain, non-trivial logic embedded in an otherwise
+thin script.
+
+The script is structured so the transformation is a pure function,
+separable from file IO/CLI concerns: `build_requirements_content(pyproject_data: dict) -> str`,
+taking already-parsed TOML data (a plain dict, as `tomllib.load` would
+produce) and returning the exact `requirements.txt` text — no file reads,
+no writes, no argv. `main()` stays a thin wrapper: read the file, parse it,
+call this function, then either write the result or compare it against the
+existing file for `--check`. Unit tests exercise
+`build_requirements_content` directly against an in-memory fixture dict
+(not a real `pyproject.toml` file, so no file IO in the test itself),
+covering at minimum: core `dependencies` and the `demo` extras both appear
+in the output, and the output is exactly one package specifier per line
+with no other content — this is the concrete check that would have caught
+a "demo extras silently dropped" bug the `--check` step alone cannot.
+
 ## 4. Generation — Groq, `llama-3.1-8b-instant`, Documented Model Substitution
 
 **Provider: Groq**, chosen for its free tier and inference speed (keeps the
