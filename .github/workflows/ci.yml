@@ -13,3 +13,4 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest
+      - run: python scripts/generate_requirements.py --check

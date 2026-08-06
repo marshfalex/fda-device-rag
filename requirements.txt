@@ -1,0 +1,8 @@
+chromadb>=0.5
+sentence-transformers>=3.0
+rank_bm25>=0.2.2
+requests>=2.31
+pypdf>=4.0
+langchain-text-splitters>=0.2
+streamlit>=1.61
+huggingface_hub>=1.26
