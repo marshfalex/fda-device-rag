@@ -86,21 +86,24 @@ if question:
             f"for this session. Refresh the page to reset."
         )
     else:
-        st.session_state.question_count += 1
-
         stack = get_retrieval_stack()
         chunks = stack.hybrid_retriever.retrieve(question, top_k=TOP_K)
         prompt, chunk_map = build_prompt(question, chunks)
 
-        groq_api_key = st.secrets.get("GROQ_API_KEY")
+        try:
+            groq_api_key = st.secrets.get("GROQ_API_KEY")
+        except FileNotFoundError:  # StreamlitSecretNotFoundError subclasses this
+            groq_api_key = None
+
         if not groq_api_key:
             st.error("GROQ_API_KEY is not configured for this deployment.")
         else:
             try:
                 answer = generate(prompt, groq_api_key)
-            except GroqError as e:
-                st.error(f"Generation failed: {e}")
+            except GroqError:
+                st.error("Generation failed — the Groq API call did not succeed. Try again.")
             else:
+                st.session_state.question_count += 1
                 citations, citation_label = extract_citations(answer, chunk_map)
 
                 st.subheader("Answer")

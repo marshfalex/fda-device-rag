@@ -30,6 +30,7 @@ def generate(prompt: str, api_key: str, base_url: str = GROQ_BASE_URL, model: st
     shape) raises GroqError -- a single linear POST-and-unwrap with no
     branching worth unit-testing, same rationale as ollama_client.py's
     generate()."""
+    api_key = api_key.strip()
     try:
         response = requests.post(
             f"{base_url}/chat/completions",
