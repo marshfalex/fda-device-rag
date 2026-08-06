@@ -12,3 +12,4 @@ data/eval/results.json
 data/eval/spot_check_transcripts.md
 *.egg-info/
 .pytest_cache/
+.streamlit/secrets.toml
