@@ -6,3 +6,6 @@ pypdf>=4.0
 langchain-text-splitters>=0.2
 streamlit>=1.61
 huggingface_hub>=1.26
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0+cpu
+.

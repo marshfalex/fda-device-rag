@@ -30,7 +30,22 @@ def build_requirements_content(pyproject_data: dict) -> str:
     No file IO, no argv -- testable in isolation from the CLI wrapper."""
     core_deps = pyproject_data["project"]["dependencies"]
     demo_deps = pyproject_data["project"]["optional-dependencies"]["demo"]
-    return "\n".join(core_deps + demo_deps) + "\n"
+    # sentence-transformers (a core dep) pulls in torch transitively. On Linux
+    # deploy targets (e.g. Streamlit Community Cloud), a plain `pip install
+    # torch` resolves to the CUDA-enabled build by default, dragging in
+    # several GB of nvidia-* wheels and commonly blowing the build step's
+    # resource/time budget. Pin an explicit CPU-only torch build so pip never
+    # considers the CUDA wheel.
+    torch_cpu_pin = [
+        "--extra-index-url https://download.pytorch.org/whl/cpu",
+        "torch==2.13.0+cpu",
+    ]
+    # Self-install this project (equivalent to `pip install .`) so that
+    # installing from requirements.txt alone -- which is all Streamlit
+    # Community Cloud does; it never runs `pip install -e .` / `pip install .`
+    # against the repo -- also installs the fda_device_rag package itself.
+    self_install = ["."]
+    return "\n".join(core_deps + demo_deps + torch_cpu_pin + self_install) + "\n"
 
 
 def main() -> None:
