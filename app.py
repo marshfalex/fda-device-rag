@@ -11,10 +11,18 @@ longer hosts plain llama3; see that design doc's section 4). Local dev/eval
 (scripts/ask.py, scripts/spot_check_transcripts.py) still uses Ollama with
 llama3:latest, unchanged by this file.
 """
+import sys
 from pathlib import Path
 
 import streamlit as st
 from huggingface_hub import snapshot_download
+
+# Streamlit Community Cloud only reinstalls requirements.txt when its text
+# changes, so a stale pip-installed fda_device_rag can lag behind app.py's
+# own imports after a code-only push. The git checkout itself is always
+# current, so importing straight from src/ avoids depending on the
+# installed copy at all.
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from fda_device_rag.generation.citations import extract_citations
 from fda_device_rag.generation.groq_client import GROQ_MODEL, GroqError, generate
