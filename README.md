@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/marshfalex/fda-device-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/marshfalex/fda-device-rag/actions/workflows/ci.yml)
 
+**Live demo:** [fda-device-rag.streamlit.app](https://fda-device-rag.streamlit.app/)
+
 A Q&A system over public FDA medical-device documentation — device recalls,
 adverse event reports (MAUDE), FDA guidance documents, and manufacturer
 Instructions for Use (IFUs) — with citation grounding, so every answer can be
@@ -10,14 +12,13 @@ traced back to the source record or document section it came from.
 This is a portfolio project. The design rationale for each decision is written
 up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`](docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md).
 
-> **Status: Phases 1-3 and 5 (retrieval pipeline + accuracy benchmark +
-> citation grounding + CI).** What exists today is corpus ingestion,
-> chunking, local embedding, hybrid retrieval, a leakage-safe
-> retrieval-accuracy benchmark, Ollama-backed grounded answer generation
-> with citation extraction (`scripts/ask.py`), and GitHub Actions CI
-> (lint + tests on every push/PR — badge above, verified green on the
-> first real push, not just written and assumed). The deployed demo is
-> the one remaining phase and is **not** implemented yet.
+> **Status: all 5 phases done** (retrieval pipeline + accuracy benchmark +
+> citation grounding + deployed demo + CI). Corpus ingestion, chunking,
+> local embedding, hybrid retrieval, a leakage-safe retrieval-accuracy
+> benchmark, grounded answer generation with citation extraction (Ollama
+> locally via `scripts/ask.py`, Groq-hosted on the public demo), and
+> GitHub Actions CI (lint + tests on every push/PR — badge above, verified
+> green on real pushes, not just written and assumed) are all live.
 
 ## Corpus
 
@@ -217,13 +218,17 @@ churn with no bug-catching value.
 The operator scripts (`pull_corpus.py`, `build_index.py`, `query.py`, `ask.py`)
 are otherwise deliberately untested — they are thin network/IO wrappers over
 the library code in `src/fda_device_rag/`, which is where most test coverage
-lives. The one exception is `pull_corpus.py`'s `_fetch_paginated` cross-page
-dedup logic (`tests/test_pull_corpus.py`), which is plain enough logic to be
-worth pinning directly. `spot_check_transcripts.py` follows the same
-untested-CLI reasoning for its batch/generation loop, but its
-`select_spot_check_questions` selection function is plain enough logic to
-have its own unit tests (`tests/eval/test_spot_check_transcripts.py`), so its
-coverage is partial rather than fully absent.
+lives. A few exceptions, where a script embeds plain enough logic to be worth
+pinning directly rather than leaving as an untested wrapper:
+`pull_corpus.py`'s `_fetch_paginated` cross-page dedup logic
+(`tests/test_pull_corpus.py`); `build_index.py`'s `_chunk_pdf_dir`, which
+resolves each guidance/IFU PDF's real source URL rather than its local
+on-disk path (`tests/test_build_index.py`) — a real bug this pinning exists
+to prevent recurring, since it once shipped a local filesystem path as a
+public citation link; and `spot_check_transcripts.py`'s
+`select_spot_check_questions` selection function
+(`tests/eval/test_spot_check_transcripts.py`). Coverage for these scripts is
+partial rather than fully absent.
 
 ## Roadmap
 
@@ -232,5 +237,5 @@ coverage is partial rather than fully absent.
 | 1 | Retrieval pipeline (ingest → chunk → embed → hybrid retrieve) | Done |
 | 2 | Leakage-safe retrieval-accuracy benchmark | Done |
 | 3 | Citation grounding / answer generation | Done |
-| 4 | Deployed demo | Planned |
+| 4 | Deployed demo | Done |
 | 5 | CI | Done |
