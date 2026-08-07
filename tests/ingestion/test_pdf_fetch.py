@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from fda_device_rag.ingestion.pdf_fetch import download_pdfs
+from fda_device_rag.ingestion.pdf_fetch import download_pdfs, resolve_source_url
 
 
 @patch("fda_device_rag.ingestion.pdf_fetch.requests.get")
@@ -46,6 +46,22 @@ def test_download_pdfs_appends_pdf_extension_if_missing(mock_get, tmp_path):
     paths = download_pdfs(["https://example.com/docs/guidance-2"], dest_dir)
 
     assert paths[0].name == "guidance-2.pdf"
+
+
+def test_resolve_source_url_matches_filename_derived_from_url():
+    url_list = [
+        "https://www.fda.gov/media/78369/download",
+        "https://example.com/docs/guidance-1.pdf",
+    ]
+
+    assert resolve_source_url("78369.pdf", url_list) == "https://www.fda.gov/media/78369/download"
+    assert resolve_source_url("guidance-1.pdf", url_list) == "https://example.com/docs/guidance-1.pdf"
+
+
+def test_resolve_source_url_returns_none_for_unknown_filename():
+    url_list = ["https://example.com/docs/guidance-1.pdf"]
+
+    assert resolve_source_url("not-in-the-list.pdf", url_list) is None
 
 
 @patch("fda_device_rag.ingestion.pdf_fetch.requests.get")

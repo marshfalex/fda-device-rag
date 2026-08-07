@@ -26,6 +26,17 @@ def _derive_filename(url: str) -> str:
     return filename
 
 
+def resolve_source_url(filename: str, url_list: list[str]) -> str | None:
+    """Maps a filename downloaded by download_pdfs back to the URL it came
+    from, by re-deriving each candidate URL's filename with the same rule.
+    Returns None if no URL in the list produces this filename (e.g. a
+    manually-placed PDF not in the known URL list)."""
+    for url in url_list:
+        if _derive_filename(url) == filename:
+            return url
+    return None
+
+
 def download_pdfs(url_list: list[str], dest_dir: Path) -> list[Path]:
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)

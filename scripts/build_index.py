@@ -8,10 +8,13 @@ import json
 import pickle
 from pathlib import Path
 
+from pull_corpus import GUIDANCE_PDF_URLS, IFU_PDF_URLS
+
 from fda_device_rag.chunking.pdf_chunker import chunk_pdf_text
 from fda_device_rag.documents.pdf_document import extract_pdf_text
 from fda_device_rag.documents.structured import event_to_chunk, recall_to_chunk
 from fda_device_rag.embedding.embedder import Embedder
+from fda_device_rag.ingestion.pdf_fetch import resolve_source_url
 from fda_device_rag.retrieval.bm25_index import BM25Index
 from fda_device_rag.store.chroma_store import ChromaStore
 
@@ -32,6 +35,34 @@ def _read_pull_date() -> str:
     return ""
 
 
+def _chunk_pdf_dir(pdf_dir: Path, source_type: str, url_list: list[str], retrieved_date: str) -> list:
+    """Chunks every PDF in pdf_dir, resolving each one's real source URL from
+    url_list (the same list pull_corpus.py downloaded it from) instead of the
+    local on-disk path -- a local path isn't a usable citation link once the
+    corpus is deployed. Degrades to the local path (with a warning) for a
+    manually-placed PDF not in url_list, rather than crashing."""
+    chunks = []
+    for pdf_path in sorted(pdf_dir.glob("*.pdf")):
+        text = extract_pdf_text(pdf_path)
+        source_url = resolve_source_url(pdf_path.name, url_list)
+        if source_url is None:
+            print(f"WARNING: no known source URL for {pdf_path.name} -- add it to "
+                  f"GUIDANCE_PDF_URLS/IFU_PDF_URLS in pull_corpus.py. Falling back to the "
+                  f"local path, which won't be a usable citation link once deployed.")
+            source_url = str(pdf_path)
+        chunks.extend(
+            chunk_pdf_text(
+                text,
+                source_type=source_type,
+                source_url=source_url,
+                document_title=pdf_path.stem,
+                retrieved_date=retrieved_date,
+                id_prefix=pdf_path.stem,
+            )
+        )
+    return chunks
+
+
 def main() -> None:
     retrieved_date = _read_pull_date()
     chunks = []
@@ -50,21 +81,13 @@ def main() -> None:
             if chunk is not None:
                 chunks.append(chunk)
 
-    for pdf_dir, source_type in [(DATA_DIR / "guidance_pdfs", "guidance_pdf"), (DATA_DIR / "ifu_pdfs", "ifu_pdf")]:
+    for pdf_dir, source_type, url_list in [
+        (DATA_DIR / "guidance_pdfs", "guidance_pdf", GUIDANCE_PDF_URLS),
+        (DATA_DIR / "ifu_pdfs", "ifu_pdf", IFU_PDF_URLS),
+    ]:
         if not pdf_dir.exists():
             continue
-        for pdf_path in sorted(pdf_dir.glob("*.pdf")):
-            text = extract_pdf_text(pdf_path)
-            chunks.extend(
-                chunk_pdf_text(
-                    text,
-                    source_type=source_type,
-                    source_url=str(pdf_path),
-                    document_title=pdf_path.stem,
-                    retrieved_date=retrieved_date,
-                    id_prefix=pdf_path.stem,
-                )
-            )
+        chunks.extend(_chunk_pdf_dir(pdf_dir, source_type, url_list, retrieved_date))
 
     # Guard before Embedder(), which loads a ~130MB model -- otherwise running
     # the scripts out of order costs a slow download just to fail on an empty
