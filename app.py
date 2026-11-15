@@ -103,7 +103,13 @@ if question:
             f"for this session. Refresh the page to reset."
         )
     else:
-        stack = get_retrieval_stack()
+        try:
+            stack = get_retrieval_stack()
+        except Exception as e:  # noqa: BLE001
+            # Streamlit Cloud redacts exception text; index-load errors come
+            # from Chroma/SQLite and hold no secrets, so show the real cause.
+            st.error(f"Failed to load the search index: {type(e).__name__}: {e}")
+            st.stop()
         chunks = stack.hybrid_retriever.retrieve(question, top_k=TOP_K)
         prompt, chunk_map = build_prompt(question, chunks)
 
