@@ -5,9 +5,9 @@ Downloads the pre-built corpus/index from a Hugging Face Dataset at
 startup -- see
 docs/superpowers/specs/2026-08-06-deployed-demo-design.md section 5.
 
-Generation uses llama-3.1-8b-instant via Groq -- a documented substitution
-for the locally-benchmarked llama3:latest (Groq's production catalog no
-longer hosts plain llama3; see that design doc's section 4). Local dev/eval
+Generation uses openai/gpt-oss-20b via Groq -- a documented substitution
+for the locally-benchmarked llama3:latest (Groq no longer hosts any Llama
+model on its free tier; llama-3.1-8b-instant was shut down 2026-08-16). Local dev/eval
 (scripts/ask.py, scripts/spot_check_transcripts.py) still uses Ollama with
 llama3:latest, unchanged by this file.
 """
@@ -72,9 +72,10 @@ with st.expander("About this demo / retrieval-accuracy benchmark"):
         f"""
 This demo answers using **{GROQ_MODEL}** via Groq — a documented
 substitution for the `llama3:latest` model actually used in the local
-retrieval-accuracy benchmark below (Groq's hosted catalog no longer
-includes plain llama3; `llama-3.1-8b-instant` is the closest available
-match, same 8B size class).
+retrieval-accuracy benchmark below. Groq no longer offers Llama models on
+its free tier (`llama-3.1-8b-instant` was shut down on 2026-08-16), so the
+demo uses Groq's listed replacement. Retrieval results below do not depend
+on the generation model.
 
 **Pooled retrieval results, n=50 frozen benchmark questions** (full
 methodology: [README](https://github.com/marshfalex/fda-device-rag)):

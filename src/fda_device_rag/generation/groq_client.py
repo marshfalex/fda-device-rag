@@ -16,7 +16,9 @@ apply. This module is deliberately just generate() and an error type.
 import requests
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-GROQ_MODEL = "llama-3.1-8b-instant"
+# llama-3.1-8b-instant was shut down for free/dev tiers on 2026-08-16;
+# openai/gpt-oss-20b is Groq's listed replacement.
+GROQ_MODEL = "openai/gpt-oss-20b"
 
 
 class GroqError(Exception):
