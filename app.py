@@ -34,7 +34,7 @@ TOP_K = 5
 MAX_QUESTIONS_PER_SESSION = 10
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner="Loading search index and embedding model (first load after the app wakes can take a minute)...")
 def get_retrieval_stack():
     local_dir = Path(snapshot_download(repo_id=HF_DATASET_REPO, repo_type="dataset"))
     return load_retrieval_stack(local_dir / "chroma", local_dir / "bm25_index.pkl")
