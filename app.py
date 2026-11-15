@@ -42,10 +42,10 @@ def get_retrieval_stack():
     # The HF cache stores files as symlinks into a blob store; Chroma's Rust
     # backend needs a real, writable directory (it opens SQLite read-write),
     # so copy the index out of the cache with symlinks resolved.
-    work_dir = Path(tempfile.gettempdir()) / "fda_device_rag_index"
-    chroma_dir = work_dir / "chroma"
-    if not chroma_dir.exists():
-        shutil.copytree(snapshot_dir / "chroma", chroma_dir, symlinks=False)
+    # Fresh private (0700) dir per process: never trust a pre-existing path
+    # in shared /tmp, and never serve a stale copy after the dataset changes.
+    chroma_dir = Path(tempfile.mkdtemp(prefix="fda_device_rag_")) / "chroma"
+    shutil.copytree(snapshot_dir / "chroma", chroma_dir, symlinks=False)
     return load_retrieval_stack(chroma_dir, snapshot_dir / "bm25_index.pkl")
 
 
