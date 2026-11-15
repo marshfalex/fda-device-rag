@@ -11,7 +11,9 @@ longer hosts plain llama3; see that design doc's section 4). Local dev/eval
 (scripts/ask.py, scripts/spot_check_transcripts.py) still uses Ollama with
 llama3:latest, unchanged by this file.
 """
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import streamlit as st
@@ -36,8 +38,15 @@ MAX_QUESTIONS_PER_SESSION = 10
 
 @st.cache_resource(show_spinner="Loading search index and embedding model (first load after the app wakes can take a minute)...")
 def get_retrieval_stack():
-    local_dir = Path(snapshot_download(repo_id=HF_DATASET_REPO, repo_type="dataset"))
-    return load_retrieval_stack(local_dir / "chroma", local_dir / "bm25_index.pkl")
+    snapshot_dir = Path(snapshot_download(repo_id=HF_DATASET_REPO, repo_type="dataset"))
+    # The HF cache stores files as symlinks into a blob store; Chroma's Rust
+    # backend needs a real, writable directory (it opens SQLite read-write),
+    # so copy the index out of the cache with symlinks resolved.
+    work_dir = Path(tempfile.gettempdir()) / "fda_device_rag_index"
+    chroma_dir = work_dir / "chroma"
+    if not chroma_dir.exists():
+        shutil.copytree(snapshot_dir / "chroma", chroma_dir, symlinks=False)
+    return load_retrieval_stack(chroma_dir, snapshot_dir / "bm25_index.pkl")
 
 
 def _format_chunk_line(chunk) -> str:
