@@ -45,7 +45,11 @@ def get_retrieval_stack():
     # Fresh private (0700) dir per process: never trust a pre-existing path
     # in shared /tmp, and never serve a stale copy after the dataset changes.
     chroma_dir = Path(tempfile.mkdtemp(prefix="fda_device_rag_")) / "chroma"
-    shutil.copytree(snapshot_dir / "chroma", chroma_dir, symlinks=False)
+    shutil.copytree(snapshot_dir / "chroma", chroma_dir, symlinks=False, copy_function=shutil.copyfile)
+    # HF cache files can be read-only; copytree's copystat would carry that
+    # over and Chroma fails with "attempt to write a readonly database".
+    for path in [chroma_dir, *chroma_dir.rglob("*")]:
+        path.chmod(0o700 if path.is_dir() else 0o600)
     return load_retrieval_stack(chroma_dir, snapshot_dir / "bm25_index.pkl")
 
 
