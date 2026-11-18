@@ -10,6 +10,11 @@
       "match": "api response",
       "verdict": "valid",
       "note": "same issue as above, worded differently by the model"
+    },
+    {
+      "match": "http request failures",
+      "verdict": "valid",
+      "note": "same unchecked-response issue, third wording"
     }
   ],
   "05_race_condition": [
@@ -31,6 +36,16 @@
       "match": "empty webhook secret",
       "verdict": "valid",
       "note": "HMAC with an empty key is forgeable"
+    },
+    {
+      "match": "hard-coded to empty",
+      "verdict": "valid",
+      "note": "same empty-HMAC-key issue, reworded"
+    },
+    {
+      "match": "hard‑coded to empty",
+      "verdict": "valid",
+      "note": "model used a non-breaking hyphen"
     }
   ],
   "12_ssrf": [
@@ -52,6 +67,11 @@
       "match": "keyerror",
       "verdict": "invalid",
       "note": "failing fast at import on a missing secret is intended behaviour"
+    },
+    {
+      "match": "env var at import time",
+      "verdict": "invalid",
+      "note": "same intended fail-fast as the KeyError finding"
     }
   ]
 }
