@@ -1,0 +1,10 @@
+{
+  "bug_class": "cache_leaks_across_users",
+  "category": "security",
+  "path": "app/profile.py",
+  "lines": [
+    6,
+    9
+  ],
+  "difficulty": "hard"
+}

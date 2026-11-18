@@ -47,12 +47,17 @@ def test_score_hit_within_tolerance_and_low_severity_ignored():
     assert score_case(label, [_f(line=7)])["hit"] is True
     assert score_case(label, [_f(line=9)])["hit"] is False
     s = score_case(label, [_f(line=5, severity="low")])
-    assert s["hit"] is False and s["false_positives"] == 0
+    assert s["hit"] is False and s["false_positives"] == 0 and s["unreviewed"] == []
 
 
-def test_score_clean_case_counts_false_positives():
+def test_score_extras_use_human_verdicts():
     label = {"category": None, "path": "app/x.py", "lines": None}
-    assert score_case(label, [_f(), _f(severity="medium")])["false_positives"] == 2
+    findings = [_f(), _f(severity="medium")]
+    findings[0].title, findings[1].title = "Negative quantity bug", "KeyError on import"
+    verdicts = [{"match": "negative quantity", "verdict": "valid"}, {"match": "keyerror", "verdict": "invalid"}]
+    s = score_case(label, findings, verdicts)
+    assert (s["valid_extras"], s["false_positives"], s["unreviewed"]) == (1, 1, [])
+    assert score_case(label, findings)["unreviewed"] == ["Negative quantity bug", "KeyError on import"]
 
 
 def test_parse_review_normalizes_case():

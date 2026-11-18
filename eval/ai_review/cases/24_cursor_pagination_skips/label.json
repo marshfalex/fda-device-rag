@@ -1,0 +1,10 @@
+{
+  "bug_class": "cursor_pagination_skips",
+  "category": "correctness",
+  "path": "app/feed.py",
+  "lines": [
+    4,
+    8
+  ],
+  "difficulty": "hard"
+}

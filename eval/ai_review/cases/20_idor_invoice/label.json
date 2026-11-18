@@ -1,0 +1,10 @@
+{
+  "bug_class": "idor_invoice",
+  "category": "security",
+  "path": "app/invoices.py",
+  "lines": [
+    9,
+    12
+  ],
+  "difficulty": "hard"
+}

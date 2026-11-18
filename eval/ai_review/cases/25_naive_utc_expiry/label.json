@@ -1,0 +1,10 @@
+{
+  "bug_class": "naive_utc_expiry",
+  "category": "correctness",
+  "path": "app/tokens.py",
+  "lines": [
+    6,
+    7
+  ],
+  "difficulty": "hard"
+}

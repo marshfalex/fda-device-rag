@@ -1,0 +1,52 @@
+{
+  "_how_to_use": "Human verdicts on findings that are NOT the planted bug. 'match' is a case-insensitive substring of the finding title. verdict: 'valid' (a real issue the AI was right to raise) or 'invalid' (a genuine false positive). Unmatched findings are reported as 'needs review'.",
+  "02_leaked_secret": [
+    {
+      "match": "http error handling",
+      "verdict": "valid",
+      "note": "r.json() on a 4xx/5xx hides the failure"
+    }
+  ],
+  "05_race_condition": [
+    {
+      "match": "negative quantity",
+      "verdict": "valid",
+      "note": "reserve(item, -5) increases stock"
+    }
+  ],
+  "08_mutable_default": [
+    {
+      "match": "mutates input list",
+      "verdict": "valid",
+      "note": "same root cause as the planted bug, still true"
+    }
+  ],
+  "10_timing_unsafe_compare": [
+    {
+      "match": "empty webhook secret",
+      "verdict": "valid",
+      "note": "HMAC with an empty key is forgeable"
+    }
+  ],
+  "12_ssrf": [
+    {
+      "match": "network exceptions",
+      "verdict": "valid",
+      "note": "minor, but real"
+    }
+  ],
+  "92_clean_locked_reserve": [
+    {
+      "match": "negative quantity",
+      "verdict": "valid",
+      "note": "the 'clean' control still had this bug"
+    }
+  ],
+  "93_clean_compare_digest": [
+    {
+      "match": "keyerror",
+      "verdict": "invalid",
+      "note": "failing fast at import on a missing secret is intended behaviour"
+    }
+  ]
+}

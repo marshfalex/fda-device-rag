@@ -12,6 +12,25 @@
 - Model under test: ______ (set via `AI_REVIEW_PROVIDER` / `AI_REVIEW_MODEL`; default is Claude if `ANTHROPIC_API_KEY` is set, otherwise Groq's free `openai/gpt-oss-120b`).
 - Command: `python eval/ai_review/run_eval.py --runs 3`
 
+## v1 run (Groq `openai/gpt-oss-120b`, 1 run per case)
+
+| metric | value |
+|---|---|
+| Recall, textbook bugs | **12/12** (95% CI 76–100%) |
+| "False alarms" on clean controls (as v1 scored them) | 2/4 |
+| Precision (as v1 scored it) | 79% |
+
+**What v1 actually showed: my scoring was wrong, not the model.** v1 counted *every* finding other than the planted bug as noise. When I read them by hand, most were real:
+- On the "clean" locked `reserve()`, the model found that a negative quantity *increases* stock. My control wasn't clean.
+- On the planted cases, the extras were real secondary issues: an HMAC with an empty default key, `r.json()` with no status check, unhandled network errors.
+- Only one was a genuine false positive: a `KeyError` on a missing secret at import time, which fails fast on purpose.
+
+All 12 hits also named the right bug category, so the line-proximity rule wasn't inflating recall.
+
+**Lessons:**
+1. You can't grade an AI reviewer fully automatically. Someone has to judge whether each extra finding is real, so v2 adds `adjudications.json` for human verdicts.
+2. 100% recall on textbook cases mostly shows that the test was easy. v2 adds 6 *hard* cases: an IDOR, a cache that leaks data across users, a retry that double-charges, float money, a cursor that skips rows, and naive vs UTC time. None of them contains a "dangerous function" to pattern-match on.
+
 ## Results (fill in from results.json)
 
 | metric | value | 95% CI |
