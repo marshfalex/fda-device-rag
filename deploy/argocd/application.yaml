@@ -7,8 +7,8 @@ spec:
   project: default
   source:
     # Point at your manifests repo (see docs/infra/SETUP_GUIDE.md step 6).
-    repoURL: https://github.com/marshfalex/fda-device-rag-manifests.git
-    targetRevision: main
+    repoURL: https://github.com/marshfalex/fda-device-rag.git
+    targetRevision: master
     path: deploy/k8s/overlays/oci
   destination:
     server: https://kubernetes.default.svc

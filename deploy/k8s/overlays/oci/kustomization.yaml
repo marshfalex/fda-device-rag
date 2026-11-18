@@ -6,7 +6,7 @@ resources:
 # Every deploy is therefore a git commit: `git revert` = rollback.
 images:
   - name: rag-app
-    newName: REGION_KEY.ocir.io/TENANCY_NAMESPACE/fda-device-rag
+    newName: ghcr.io/marshfalex/fda-device-rag
     newTag: latest
 patches:
   - target: {kind: Ingress, name: rag-app}
