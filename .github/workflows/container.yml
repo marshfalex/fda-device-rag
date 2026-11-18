@@ -7,7 +7,7 @@ name: Container
 # manifests, Terraform and eval-only PRs skip the ~15 min multi-arch build.
 on:
   pull_request:
-    paths: &image_inputs
+    paths:
       - Dockerfile
       - .dockerignore
       - requirements.txt
@@ -17,7 +17,14 @@ on:
       - .github/workflows/container.yml
   push:
     branches: [master]
-    paths: *image_inputs
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - pyproject.toml
+      - app.py
+      - src/**
+      - .github/workflows/container.yml
   workflow_dispatch:
 
 env:
