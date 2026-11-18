@@ -6,6 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     HF_HOME=/home/app/.cache/huggingface
 
+# Pick up Debian security fixes (Trivy gates on fixable CRITICAL/HIGH).
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 
@@ -13,7 +17,7 @@ WORKDIR /app
 # Cloud needs), so pyproject.toml and src/ must be present before pip runs.
 COPY requirements.txt pyproject.toml ./
 COPY src/ src/
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
 
 COPY app.py .
 
