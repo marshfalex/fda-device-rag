@@ -9,10 +9,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 
-COPY requirements.txt .
+# requirements.txt begins with "." (installs this package, as Streamlit
+# Cloud needs), so pyproject.toml and src/ must be present before pip runs.
+COPY requirements.txt pyproject.toml ./
+COPY src/ src/
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY src/ src/
 COPY app.py .
 
 USER 10001
