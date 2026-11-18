@@ -38,8 +38,10 @@ jobs:
 
       - name: Trivy scan (fail on fixable CRITICAL/HIGH)
         run: |
+          TRIVY=mirror.gcr.io/aquasec/trivy:0.57.1
+          for i in 1 2 3; do docker pull "$TRIVY" && break; sleep 10; done
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:0.57.1 image --severity CRITICAL,HIGH --ignore-unfixed \
+            "$TRIVY" image --severity CRITICAL,HIGH --ignore-unfixed \
             --exit-code 1 --format table scan:${{ steps.meta.outputs.tag }}
 
       - name: Log in to OCIR
