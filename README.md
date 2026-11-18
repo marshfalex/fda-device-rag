@@ -12,7 +12,7 @@ traced back to the source record or document section it came from.
 This is a portfolio project. The design rationale for each decision is written
 up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`](docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md).
 
-> **Status: all 5 phases done** (retrieval pipeline + accuracy benchmark +
+> **Status: all 5 RAG phases done, plus a production-style delivery platform** (see below). RAG phases: (retrieval pipeline + accuracy benchmark +
 > citation grounding + deployed demo + CI). Corpus ingestion, chunking,
 > local embedding, hybrid retrieval, a leakage-safe retrieval-accuracy
 > benchmark, grounded answer generation with citation extraction (Ollama
@@ -20,17 +20,32 @@ up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`
 > GitHub Actions CI (lint + tests on every push/PR — badge above, verified
 > green on real pushes, not just written and assumed) are all live.
 
-## Production-style delivery (OCI + RKE2 + GitOps + AI review)
+## Production-style delivery (Terraform + RKE2 + GitOps + AI review)
 
-This app also runs on a production-style platform on Oracle Cloud's Always Free tier:
+| | |
+|---|---|
+| **Infrastructure as code** | Terraform in `infra/terraform/` builds an OCI VCN with public and private subnets, an internet gateway, a NAT gateway, route tables, NSGs, a bastion and a load balancer. The network is deployed on OCI. The Always Free ARM nodes never got capacity, so the cluster runs on RKE2 locally ([why](docs/infra/ARCHITECTURE.md)). |
+| **Kubernetes (RKE2)** | `deploy/k8s/`: a Deployment with startup, readiness and liveness probes, resource limits and non-root; plus Service, Ingress, HPA, PDB and a default-deny NetworkPolicy. |
+| **CI/CD** | Every PR runs ruff, pytest, Gitleaks, Terraform validate and kubeconform. Image changes also get a Trivy scan (it fails on fixable CRITICAL/HIGH) and a multi-arch build. A merge pushes the image to GHCR, and CI commits the new tag to `deploy/`. |
+| **GitOps (Argo CD)** | The cluster syncs from git with self-heal. Every deploy is a commit, and rollback is a `git revert`. |
+| **AI review gate** | `tools/ai_review/` posts severity-tagged review comments on every PR (Claude, or Groq's free tier). **It can only comment; a human approves every merge.** |
 
-- **Infrastructure as code.** Terraform in `infra/terraform/` builds a VCN with public and private subnets, an IGW, a NAT gateway, NSGs, a bastion, a flexible LB, and a 3-node RKE2 cluster on Ampere ARM.
-- **Kubernetes.** `deploy/k8s/` holds the Deployment (startup, readiness, and liveness probes, limits), Service, Ingress, HPA, PDB, and default-deny NetworkPolicy.
-- **CI/CD.** On every PR: lint, tests, Gitleaks, Trivy, and a multi-arch image build. On merge, the image goes to GHCR, CI commits the new tag to `deploy/`, and Argo CD syncs the cluster from git.
-- **Two targets, one repo.** The same manifests deploy to the OCI cluster and to a single-node RKE2 cluster on a laptop (`deploy/k8s/overlays/{oci,local}`).
-- **AI review gate.** `tools/ai_review/` posts severity-tagged review comments. It **can only comment; a human approves merges.** It is evaluated on seeded-bug PRs in `eval/ai_review/`.
+**AI reviewer evaluation** (66 reviews, Groq `gpt-oss-120b`, [details](docs/ai-review/EVALUATION.md)):
 
-Docs: [architecture](docs/infra/ARCHITECTURE.md) · [step-by-step setup](docs/infra/SETUP_GUIDE.md) · [runbooks](docs/infra/runbooks/) · [AI reviewer eval](docs/ai-review/EVALUATION.md)
+| | caught | 95% CI |
+|---|---|---|
+| Textbook bugs (SQLi, SSRF, pickle, path traversal…) | **36/36** | 90–100% |
+| Hard logic bugs (IDOR, cache leak, double charge…) | **13/18** | 49–88% |
+| Precision over human-judged findings | **58/61** | 87–98% |
+
+It missed a cursor-pagination bug in **3 of 3 runs**, and it caught a float-money bug in only **1 of 3 runs** on identical input. That's why it stays advisory.
+
+**Incident runbooks**, two of them from real incidents during the build:
+[CNI IP exhaustion from a missing `iptables`](docs/infra/runbooks/04-cni-ip-exhaustion.md) ·
+[HPA vs Argo CD fighting over replicas](docs/infra/runbooks/05-hpa-vs-argocd-replicas.md) ·
+[node loss](docs/infra/runbooks/01-node-failure.md) · [bad image](docs/infra/runbooks/02-crashloop-bad-image.md) · [NetworkPolicy](docs/infra/runbooks/03-networkpolicy.md)
+
+Docs: [architecture](docs/infra/ARCHITECTURE.md) · [setup guide](docs/infra/SETUP_GUIDE.md) · [AI reviewer eval](docs/ai-review/EVALUATION.md)
 
 ## Corpus
 
@@ -251,3 +266,5 @@ partial rather than fully absent.
 | 3 | Citation grounding / answer generation | Done |
 | 4 | Deployed demo | Done |
 | 5 | CI | Done |
+| 6 | Delivery platform: Terraform (OCI network), RKE2, Argo CD GitOps, security scanning | Done (cluster validated locally; OCI ARM capacity unavailable) |
+| 7 | AI code-review gate + evaluation | Done |

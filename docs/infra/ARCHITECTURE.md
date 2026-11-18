@@ -1,5 +1,7 @@
 # Delivery Platform Architecture (OCI Always Free + RKE2 + GitOps)
 
+> **Status.** The OCI network layer (VCN, subnets, gateways, route tables, NSGs, load balancer) is deployed with Terraform. The Always Free Ampere VMs couldn't be provisioned: Chicago had no A1 capacity across 86+ automated retry rounds. The same manifests and GitOps flow were validated on a single-node RKE2 cluster (`deploy/k8s/overlays/local`).
+
 ```mermaid
 flowchart LR
   dev[Developer PR] --> gh[GitHub]
@@ -8,8 +10,8 @@ flowchart LR
   ai -.->|advisory comments| gh
   human[Human reviewer] -->|approves + merges| gh
   gh -->|main| img[Build multi-arch image<br/>Trivy scan]
-  img -->|push| ocir[(OCI Registry)]
-  img -->|commit new tag| mrepo[Manifests repo]
+  img -->|push| ocir[(GHCR)]
+  img -->|commit new tag| mrepo[deploy/ in git]
   mrepo -->|pull| argo[Argo CD]
 
   subgraph OCI[OCI VCN 10.0.0.0/16]
@@ -76,7 +78,7 @@ The three A1 VMs use exactly the free A1 allowance of 4 OCPU and 24 GB. The imag
 
 1. A PR runs CI (ruff, pytest, requirements check, Gitleaks), the container workflow (build, then Trivy), and the AI review, which only posts comments.
 2. Branch protection requires CI to pass **and one human approval**. The AI can't approve.
-3. A merge to `master` builds a multi-arch image tagged `sha-<7>` and pushes it to OCIR. CI then commits the new tag to the manifests repo.
+3. A merge to `master` that changes the image inputs builds a multi-arch image tagged `sha-<7>` and pushes it to GHCR. CI then commits the new tag to `deploy/k8s/overlays/*`.
 4. Argo CD (with auto-sync, prune, and self-heal) applies the change. To roll back, `git revert` the bump commit.
 
 ## What I'd do differently in production
