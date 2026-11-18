@@ -71,3 +71,16 @@ variable "rke2_version" {
   type        = string
   default     = "v1.31.4+rke2r1"
 }
+
+# Always Free quirks: the E2.1.Micro is only allowed in ONE availability domain
+# of the home region, and A1 capacity varies per AD. Pick each independently
+# (1-based; run `oci iam availability-domain list` to see how many you have).
+variable "bastion_ad_number" {
+  type    = number
+  default = 1
+}
+
+variable "nodes_ad_number" {
+  type    = number
+  default = 1
+}

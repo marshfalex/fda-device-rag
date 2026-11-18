@@ -3,7 +3,9 @@ data "oci_identity_availability_domains" "ads" {
 }
 
 locals {
-  ad             = data.oci_identity_availability_domains.ads.availability_domains[0].name
+  ads            = data.oci_identity_availability_domains.ads.availability_domains[*].name
+  bastion_ad     = local.ads[var.bastion_ad_number - 1]
+  nodes_ad       = local.ads[var.nodes_ad_number - 1]
   ssh_public_key = file(pathexpand(var.ssh_public_key_path))
 }
 
@@ -34,7 +36,7 @@ resource "random_password" "rke2_token" {
 # ---- Bastion (Always Free E2.1.Micro, public subnet) ----
 resource "oci_core_instance" "bastion" {
   compartment_id      = var.compartment_ocid
-  availability_domain = local.ad
+  availability_domain = local.bastion_ad
   display_name        = "bastion"
   shape               = "VM.Standard.E2.1.Micro"
   create_vnic_details {
@@ -55,7 +57,7 @@ resource "oci_core_instance" "bastion" {
 # ---- RKE2 server (control plane + etcd) ----
 resource "oci_core_instance" "server" {
   compartment_id      = var.compartment_ocid
-  availability_domain = local.ad
+  availability_domain = local.nodes_ad
   display_name        = "rke2-server"
   shape               = "VM.Standard.A1.Flex"
   shape_config {
@@ -88,7 +90,7 @@ resource "oci_core_instance" "server" {
 resource "oci_core_instance" "agent" {
   count               = var.agent_count
   compartment_id      = var.compartment_ocid
-  availability_domain = local.ad
+  availability_domain = local.nodes_ad
   display_name        = "rke2-agent-${count.index}"
   shape               = "VM.Standard.A1.Flex"
   shape_config {
