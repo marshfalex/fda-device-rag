@@ -31,12 +31,15 @@ jobs:
         run: git diff --unified=5 "origin/${{ github.base_ref }}...HEAD" -- . ':(exclude)*.lock' ':(exclude)data/**' > pr.diff
       - name: Review
         env:
+          # Uses Claude if ANTHROPIC_API_KEY is set, otherwise Groq's free tier.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::notice::ANTHROPIC_API_KEY secret not set; skipping AI review (see docs/infra/SETUP_GUIDE.md step 5)."
+          if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$GROQ_API_KEY" ]; then
+            echo "::notice::No ANTHROPIC_API_KEY or GROQ_API_KEY secret; skipping AI review."
             exit 0
           fi
+          if [ ! -s pr.diff ]; then echo "Empty diff; nothing to review."; exit 0; fi
           python -m tools.ai_review.review --diff-file pr.diff --post

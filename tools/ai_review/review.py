@@ -1,5 +1,6 @@
-"""AI code-review gate: sends a PR diff to Claude and returns structured
-findings (correctness / security / maintainability, each with a severity).
+"""AI code-review gate: sends a PR diff to an LLM (Claude, or Groq's free
+tier) and returns structured findings (correctness / security /
+maintainability, each with a severity).
 
 Human-in-the-loop by design: this tool can only *comment*. It never
 approves, requests changes, or merges -- branch protection requires a
@@ -18,7 +19,13 @@ import re
 import sys
 from dataclasses import asdict, dataclass
 
-MODEL = os.environ.get("AI_REVIEW_MODEL", "claude-opus-5-5")
+# Provider: "anthropic" (Claude) or "groq" (free tier). Defaults to whichever
+# API key is present, preferring Anthropic.
+PROVIDER = os.environ.get("AI_REVIEW_PROVIDER") or (
+    "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "groq")
+DEFAULT_MODELS = {"anthropic": "claude-opus-5-5", "groq": "openai/gpt-oss-120b"}
+MODEL = os.environ.get("AI_REVIEW_MODEL", DEFAULT_MODELS.get(PROVIDER, ""))
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MAX_DIFF_CHARS = 400_000  # ~100k tokens; bigger PRs get a "too large" note instead of silent truncation
 
 CATEGORIES = ["correctness", "security", "maintainability"]
@@ -80,11 +87,13 @@ def parse_review(raw_json: str) -> tuple[str, list[Finding]]:
     findings = []
     for item in data.get("findings", []):
         try:
+            category = str(item["category"]).strip().lower()
+            severity = str(item["severity"]).strip().lower()
             f = Finding(
                 path=str(item["path"]).removeprefix("b/"),
                 line=int(item["line"]),
-                category=item["category"] if item["category"] in CATEGORIES else "maintainability",
-                severity=item["severity"] if item["severity"] in SEVERITIES else "low",
+                category=category if category in CATEGORIES else "maintainability",
+                severity=severity if severity in SEVERITIES else "low",
                 title=str(item["title"]),
                 explanation=str(item["explanation"]),
             )
@@ -95,12 +104,18 @@ def parse_review(raw_json: str) -> tuple[str, list[Finding]]:
 
 
 def review_diff(diff: str) -> tuple[str, list[Finding]]:
-    """One Claude call -> (summary, findings)."""
-    import anthropic  # lazy: keeps the anthropic SDK out of the core test deps
-
+    """One model call -> (summary, findings), on the configured provider."""
     if len(diff) > MAX_DIFF_CHARS:
         return (f"Diff is {len(diff):,} chars, over the {MAX_DIFF_CHARS:,} review limit; "
                 "split the PR or review manually.", [])
+    if PROVIDER == "groq":
+        return _review_groq(diff)
+    return _review_anthropic(diff)
+
+
+def _review_anthropic(diff: str) -> tuple[str, list[Finding]]:
+    import anthropic  # lazy: keeps the anthropic SDK out of the core test deps
+
     client = anthropic.Anthropic()
     with client.beta.messages.stream(
         model=MODEL,
@@ -116,6 +131,35 @@ def review_diff(diff: str) -> tuple[str, list[Finding]]:
         return ("Model declined to review this diff; human review required.", [])
     text = next((b.text for b in response.content if b.type == "text"), "")
     return parse_review(text)
+
+
+def _review_groq(diff: str, retries: int = 4) -> tuple[str, list[Finding]]:
+    """Groq's OpenAI-compatible endpoint (free tier). JSON mode guarantees
+    valid JSON but not our schema, so the schema goes in the prompt and
+    parse_review() drops anything malformed."""
+    import time
+
+    import requests
+
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT + "\n\nRespond with ONLY a JSON object matching this "
+             "JSON Schema:\n" + json.dumps(OUTPUT_SCHEMA)},
+            {"role": "user", "content": f"<diff>\n{diff}\n</diff>"},
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0,
+    }
+    headers = {"Authorization": f"Bearer {os.environ['GROQ_API_KEY'].strip()}"}
+    for attempt in range(retries):
+        r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=120)
+        if r.status_code == 429 and attempt < retries - 1:  # free-tier rate limit
+            time.sleep(float(r.headers.get("retry-after", 10 * (attempt + 1))))
+            continue
+        r.raise_for_status()
+        return parse_review(r.json()["choices"][0]["message"]["content"])
+    raise RuntimeError("Groq rate limit: retries exhausted")
 
 
 # ---------------------------------------------------------------- GitHub ---
