@@ -3,10 +3,28 @@ name: Container
 # PRs: build (both arches) + Trivy scan, no push.
 # master: build + scan + push multi-arch image to OCIR, then bump the image tag
 #       in the manifests repo -> Argo CD deploys it. Every deploy = a git commit.
+# Only rebuild the image when something that goes into it changes. Docs,
+# manifests, Terraform and eval-only PRs skip the ~15 min multi-arch build.
 on:
   pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - pyproject.toml
+      - app.py
+      - src/**
+      - .github/workflows/container.yml
   push:
     branches: [master]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - pyproject.toml
+      - app.py
+      - src/**
+      - .github/workflows/container.yml
   workflow_dispatch:
 
 env:
