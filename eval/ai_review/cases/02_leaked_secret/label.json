@@ -1,0 +1,9 @@
+{
+  "bug_class": "leaked_secret",
+  "category": "security",
+  "path": "app/payments.py",
+  "lines": [
+    3,
+    3
+  ]
+}

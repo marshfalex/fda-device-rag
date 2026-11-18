@@ -1,0 +1,9 @@
+{
+  "bug_class": "unsafe_deserialization",
+  "category": "security",
+  "path": "app/session.py",
+  "lines": [
+    7,
+    7
+  ]
+}

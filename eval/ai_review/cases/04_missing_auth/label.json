@@ -1,0 +1,9 @@
+{
+  "bug_class": "missing_auth",
+  "category": "security",
+  "path": "app/admin_routes.py",
+  "lines": [
+    18,
+    21
+  ]
+}

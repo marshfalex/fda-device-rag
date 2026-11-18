@@ -1,0 +1,9 @@
+{
+  "bug_class": "wrong_boundary_dates",
+  "category": "correctness",
+  "path": "app/billing.py",
+  "lines": [
+    6,
+    6
+  ]
+}

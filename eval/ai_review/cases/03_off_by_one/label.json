@@ -1,0 +1,9 @@
+{
+  "bug_class": "off_by_one",
+  "category": "correctness",
+  "path": "app/pagination.py",
+  "lines": [
+    5,
+    5
+  ]
+}

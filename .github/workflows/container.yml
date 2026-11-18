@@ -1,0 +1,84 @@
+name: Container
+
+# PRs: build (both arches) + Trivy scan, no push.
+# main: build + scan + push multi-arch image to OCIR, then bump the image tag
+#       in the manifests repo -> Argo CD deploys it. Every deploy = a git commit.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE: ${{ secrets.OCIR_REGISTRY }}/${{ secrets.OCIR_NAMESPACE }}/fda-device-rag
+
+jobs:
+  build-scan-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      # Single-arch local build for scanning (fast, loadable into the docker daemon).
+      - name: Build amd64 for scan
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: scan:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy scan (fail on fixable CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: scan:${{ steps.meta.outputs.tag }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      - name: Log in to OCIR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.OCIR_REGISTRY }}
+          username: ${{ secrets.OCIR_USERNAME }}   # <namespace>/<oci-username>
+          password: ${{ secrets.OCIR_AUTH_TOKEN }}
+
+      - name: Build multi-arch (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+
+  bump-manifests:
+    needs: build-scan-push
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.MANIFESTS_REPO }}     # e.g. marshfalex/fda-device-rag-manifests
+          token: ${{ secrets.MANIFESTS_REPO_TOKEN }} # fine-grained PAT: contents:write on that repo only
+      - uses: imranismail/setup-kustomize@v2
+      - name: Set image tag
+        run: |
+          cd deploy/k8s/overlays/oci
+          kustomize edit set image rag-app=${{ env.IMAGE }}:${{ needs.build-scan-push.outputs.tag }}
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git commit -am "deploy: rag-app ${{ needs.build-scan-push.outputs.tag }} (from ${{ github.repository }}@${GITHUB_SHA::7})"
+          git push

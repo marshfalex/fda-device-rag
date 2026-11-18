@@ -1,0 +1,9 @@
+{
+  "bug_class": "resource_leak_exception_swallow",
+  "category": "correctness",
+  "path": "app/config_loader.py",
+  "lines": [
+    7,
+    10
+  ]
+}

@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rag-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # Point at your manifests repo (see docs/infra/SETUP_GUIDE.md step 6).
+    repoURL: https://github.com/marshfalex/fda-device-rag-manifests.git
+    targetRevision: main
+    path: deploy/k8s/overlays/oci
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rag
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true   # manual kubectl edits get reverted -> git is the source of truth
+    syncOptions:
+      - CreateNamespace=true
