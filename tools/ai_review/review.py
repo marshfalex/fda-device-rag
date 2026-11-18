@@ -108,6 +108,11 @@ def review_diff(diff: str) -> tuple[str, list[Finding]]:
     if len(diff) > MAX_DIFF_CHARS:
         return (f"Diff is {len(diff):,} chars, over the {MAX_DIFF_CHARS:,} review limit; "
                 "split the PR or review manually.", [])
+    if PROVIDER not in DEFAULT_MODELS:
+        raise ValueError(f"Unsupported AI_REVIEW_PROVIDER {PROVIDER!r}; use one of {sorted(DEFAULT_MODELS)}")
+    key_var = "GROQ_API_KEY" if PROVIDER == "groq" else "ANTHROPIC_API_KEY"
+    if not os.environ.get(key_var, "").strip():
+        raise RuntimeError(f"{key_var} is not set; it is required for AI_REVIEW_PROVIDER={PROVIDER!r}")
     if PROVIDER == "groq":
         return _review_groq(diff)
     return _review_anthropic(diff)

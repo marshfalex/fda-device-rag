@@ -94,3 +94,17 @@ def test_groq_provider_posts_json_mode_and_retries_429(monkeypatch):
     summary, findings = review.review_diff("+x = 1\n")
     assert summary == "s" and findings[0].severity == "high"
     assert len(calls) == 2 and calls[0]["response_format"] == {"type": "json_object"}
+
+
+def test_review_diff_rejects_unknown_provider_and_missing_key(monkeypatch):
+    import pytest
+
+    from tools.ai_review import review
+
+    monkeypatch.setattr(review, "PROVIDER", "openai")
+    with pytest.raises(ValueError, match="Unsupported AI_REVIEW_PROVIDER"):
+        review.review_diff("+x\n")
+    monkeypatch.setattr(review, "PROVIDER", "groq")
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="GROQ_API_KEY is not set"):
+        review.review_diff("+x\n")
