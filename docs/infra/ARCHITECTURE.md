@@ -76,7 +76,7 @@ The three A1 VMs use exactly the free A1 allowance of 4 OCPU and 24 GB. The imag
 
 1. A PR runs CI (ruff, pytest, requirements check, Gitleaks), the container workflow (build, then Trivy), and the AI review, which only posts comments.
 2. Branch protection requires CI to pass **and one human approval**. The AI can't approve.
-3. A merge to `main` builds a multi-arch image tagged `sha-<7>` and pushes it to OCIR. CI then commits the new tag to the manifests repo.
+3. A merge to `master` builds a multi-arch image tagged `sha-<7>` and pushes it to OCIR. CI then commits the new tag to the manifests repo.
 4. Argo CD (with auto-sync, prune, and self-heal) applies the change. To roll back, `git revert` the bump commit.
 
 ## What I'd do differently in production

@@ -95,7 +95,7 @@ Go to repo **Settings → Secrets and variables → Actions**.
 | `MANIFESTS_REPO_TOKEN` | secret | fine-grained PAT, *Contents: read & write* on the manifests repo only |
 | `MANIFESTS_REPO` | **variable** | `marshfalex/fda-device-rag-manifests` |
 
-Then go to **Settings → Branches → Add rule for `main`**:
+Then go to **Settings → Branches → Add rule for `master`**:
 - Require a pull request, with **1 approval**. This is the human-in-the-loop gate.
 - Require status checks: `test`, `secrets-scan`, `build-scan-push`.
 - Do **not** make `AI review` a required check. It's advisory.
@@ -126,7 +126,7 @@ Then browse to https://localhost:8080 and log in as `admin`.
 
 ## 7. First deploy [AUTO]
 
-Merge any PR to `main`. Then:
+Merge any PR to `master`. Then:
 `container.yml` builds and pushes `sha-xxxxxxx` → commits the tag to the manifests repo → Argo syncs → the app comes up at `http://<app_hostname>`.
 
 Check it:

@@ -1,12 +1,12 @@
 name: Container
 
 # PRs: build (both arches) + Trivy scan, no push.
-# main: build + scan + push multi-arch image to OCIR, then bump the image tag
+# master: build + scan + push multi-arch image to OCIR, then bump the image tag
 #       in the manifests repo -> Argo CD deploys it. Every deploy = a git commit.
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 env:
