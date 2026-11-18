@@ -5,6 +5,11 @@
       "match": "http error handling",
       "verdict": "valid",
       "note": "r.json() on a 4xx/5xx hides the failure"
+    },
+    {
+      "match": "api response",
+      "verdict": "valid",
+      "note": "same issue as above, worded differently by the model"
     }
   ],
   "05_race_condition": [
