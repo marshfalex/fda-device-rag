@@ -10,13 +10,37 @@ Expected time: about 1 day for steps 0–5, half a day for 6–7, and 1–2 days
 
 ## 0. Tools on your laptop [YOU]
 
-```bash
-brew install terraform oci-cli kubectl helm kustomize argocd   # macOS
+### Windows: use WSL2 (recommended)
+Every command in this guide is bash, so run them inside Ubuntu on WSL2, not in PowerShell.
+In **PowerShell as Administrator**:
+```powershell
+wsl --install -d Ubuntu-24.04
 ```
-On Linux, install the same tools with your package manager or download the binaries. Then:
+Reboot, open "Ubuntu" from the Start menu, and create a Linux username and password. Everything after this runs in that Ubuntu terminal.
+Clone the repo *inside* WSL (`~/fda-device-rag`), not under `/mnt/c/`. That keeps file permissions and SSH keys working.
+
+### Install the tools (Ubuntu / WSL2 / Debian)
+```bash
+sudo apt-get update && sudo apt-get install -y git curl unzip python3-pip pipx gnupg software-properties-common
+```
+```bash
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update && sudo apt-get install -y terraform
+```
+```bash
+pipx install oci-cli && pipx ensurepath
+```
+```bash
+curl -LO "https://dl.k8s.io/release/v1.31.4/bin/linux/amd64/kubectl" && sudo install kubectl /usr/local/bin/ && rm kubectl
+```
+macOS: `brew install terraform oci-cli kubectl`.
+
+Then:
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519   # skip if you already have one
 ```
+`kubectl kustomize` is built in, so you don't need a separate kustomize install.
 
 ## 1. OCI account and API key [YOU]
 
