@@ -34,4 +34,9 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python -m tools.ai_review.review --diff-file pr.diff --post
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::ANTHROPIC_API_KEY secret not set; skipping AI review (see docs/infra/SETUP_GUIDE.md step 5)."
+            exit 0
+          fi
+          python -m tools.ai_review.review --diff-file pr.diff --post
