@@ -10,7 +10,8 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE: ${{ secrets.OCIR_REGISTRY }}/${{ secrets.OCIR_NAMESPACE }}/fda-device-rag
+  # Falls back to a local name when the OCIR secrets aren't configured (e.g. PRs before setup).
+  IMAGE: ${{ secrets.OCIR_REGISTRY && format('{0}/{1}/fda-device-rag', secrets.OCIR_REGISTRY, secrets.OCIR_NAMESPACE) || 'local/fda-device-rag' }}
 
 jobs:
   build-scan-push:
