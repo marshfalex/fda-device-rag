@@ -4,7 +4,9 @@ metadata:
   name: rag-app
   labels: {app: rag-app}
 spec:
-  replicas: 1
+  # No `replicas:` here on purpose. The HPA owns the replica count; if git also
+  # set it, Argo CD self-heal and the HPA would fight (pods killed every few
+  # seconds). See docs/infra/runbooks/05-hpa-vs-argocd-replicas.md.
   revisionHistoryLimit: 5
   strategy:
     type: RollingUpdate
