@@ -1,0 +1,10 @@
+{
+  "bug_class": "retry_double_charge",
+  "category": "correctness",
+  "path": "app/billing_client.py",
+  "lines": [
+    8,
+    14
+  ],
+  "difficulty": "hard"
+}

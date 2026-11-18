@@ -19,6 +19,8 @@ review = ["anthropic>=2.10", "requests>=2.31"]
 
 [tool.ruff]
 target-version = "py311"
+# Seeded-bug cases for the AI-review eval are intentionally flawed code.
+extend-exclude = ["eval/ai_review/cases"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

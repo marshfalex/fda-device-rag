@@ -1,0 +1,10 @@
+{
+  "bug_class": "float_money",
+  "category": "correctness",
+  "path": "app/cart.py",
+  "lines": [
+    3,
+    6
+  ],
+  "difficulty": "hard"
+}

@@ -47,12 +47,17 @@ def test_score_hit_within_tolerance_and_low_severity_ignored():
     assert score_case(label, [_f(line=7)])["hit"] is True
     assert score_case(label, [_f(line=9)])["hit"] is False
     s = score_case(label, [_f(line=5, severity="low")])
-    assert s["hit"] is False and s["false_positives"] == 0
+    assert s["hit"] is False and s["false_positives"] == 0 and s["unreviewed"] == []
 
 
-def test_score_clean_case_counts_false_positives():
+def test_score_extras_use_human_verdicts():
     label = {"category": None, "path": "app/x.py", "lines": None}
-    assert score_case(label, [_f(), _f(severity="medium")])["false_positives"] == 2
+    findings = [_f(), _f(severity="medium")]
+    findings[0].title, findings[1].title = "Negative quantity bug", "KeyError on import"
+    verdicts = [{"match": "negative quantity", "verdict": "valid"}, {"match": "keyerror", "verdict": "invalid"}]
+    s = score_case(label, findings, verdicts)
+    assert (s["valid_extras"], s["false_positives"], s["unreviewed"]) == (1, 1, [])
+    assert score_case(label, findings)["unreviewed"] == ["Negative quantity bug", "KeyError on import"]
 
 
 def test_parse_review_normalizes_case():
@@ -108,3 +113,30 @@ def test_review_diff_rejects_unknown_provider_and_missing_key(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     with pytest.raises(RuntimeError, match="GROQ_API_KEY is not set"):
         review.review_diff("+x\n")
+
+
+def test_oversized_diff_returns_human_review_note_instead_of_calling_api(monkeypatch):
+    import requests
+
+    from tools.ai_review import review
+
+    monkeypatch.setattr(review, "PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    monkeypatch.setattr(requests, "post", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API call")))
+    summary, findings = review.review_diff("+" + "x" * 30_000)
+    assert findings == [] and "human review" in summary
+
+
+def test_groq_413_degrades_to_human_review_note(monkeypatch):
+    import requests
+
+    from tools.ai_review import review
+
+    class Resp:
+        status_code, headers = 413, {}
+
+    monkeypatch.setattr(review, "PROVIDER", "groq")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
+    monkeypatch.setattr(requests, "post", lambda *a, **k: Resp())
+    summary, findings = review.review_diff("+x\n")
+    assert findings == [] and "HTTP 413" in summary

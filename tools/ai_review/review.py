@@ -26,7 +26,12 @@ PROVIDER = os.environ.get("AI_REVIEW_PROVIDER") or (
 DEFAULT_MODELS = {"anthropic": "claude-opus-5-5", "groq": "openai/gpt-oss-120b"}
 MODEL = os.environ.get("AI_REVIEW_MODEL", DEFAULT_MODELS.get(PROVIDER, ""))
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-MAX_DIFF_CHARS = 400_000  # ~100k tokens; bigger PRs get a "too large" note instead of silent truncation
+# Per-provider diff budget (chars, ~4 chars/token). Groq's free tier caps the
+# request size far below Claude's context window; over the limit the bot posts
+# "too large, needs human review" instead of truncating or crashing.
+MAX_DIFF_CHARS_BY_PROVIDER = {"anthropic": 400_000, "groq": 24_000}
+TOO_LARGE_MSG = ("Diff is {n:,} chars, over the {limit:,}-char AI review limit for {provider}; "
+                 "this PR needs a full human review (or split it into smaller PRs).")
 
 CATEGORIES = ["correctness", "security", "maintainability"]
 SEVERITIES = ["critical", "high", "medium", "low"]
@@ -105,14 +110,14 @@ def parse_review(raw_json: str) -> tuple[str, list[Finding]]:
 
 def review_diff(diff: str) -> tuple[str, list[Finding]]:
     """One model call -> (summary, findings), on the configured provider."""
-    if len(diff) > MAX_DIFF_CHARS:
-        return (f"Diff is {len(diff):,} chars, over the {MAX_DIFF_CHARS:,} review limit; "
-                "split the PR or review manually.", [])
     if PROVIDER not in DEFAULT_MODELS:
         raise ValueError(f"Unsupported AI_REVIEW_PROVIDER {PROVIDER!r}; use one of {sorted(DEFAULT_MODELS)}")
     key_var = "GROQ_API_KEY" if PROVIDER == "groq" else "ANTHROPIC_API_KEY"
     if not os.environ.get(key_var, "").strip():
         raise RuntimeError(f"{key_var} is not set; it is required for AI_REVIEW_PROVIDER={PROVIDER!r}")
+    limit = MAX_DIFF_CHARS_BY_PROVIDER[PROVIDER]
+    if len(diff) > limit:
+        return TOO_LARGE_MSG.format(n=len(diff), limit=limit, provider=PROVIDER), []
     if PROVIDER == "groq":
         return _review_groq(diff)
     return _review_anthropic(diff)
@@ -162,6 +167,9 @@ def _review_groq(diff: str, retries: int = 4) -> tuple[str, list[Finding]]:
         if r.status_code == 429 and attempt < retries - 1:  # free-tier rate limit
             time.sleep(float(r.headers.get("retry-after", 10 * (attempt + 1))))
             continue
+        if r.status_code == 413:  # request bigger than this tier allows, despite our budget
+            return TOO_LARGE_MSG.format(n=len(diff), limit=MAX_DIFF_CHARS_BY_PROVIDER["groq"],
+                                        provider="groq (HTTP 413)"), []
         r.raise_for_status()
         return parse_review(r.json()["choices"][0]["message"]["content"])
     raise RuntimeError("Groq rate limit: retries exhausted")
