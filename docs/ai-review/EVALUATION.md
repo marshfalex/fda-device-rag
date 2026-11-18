@@ -9,6 +9,7 @@
 - **A hit** is a finding of medium severity or higher on the labelled file, within ±2 lines of the labelled range.
 - **A false positive** is any finding of medium severity or higher that isn't a hit.
 - Each case runs N=3 times to show run-to-run variance. Intervals are Wilson 95%, the same as in the RAG retrieval benchmark.
+- Model under test: ______ (set via `AI_REVIEW_PROVIDER` / `AI_REVIEW_MODEL`; default is Claude if `ANTHROPIC_API_KEY` is set, otherwise Groq's free `openai/gpt-oss-120b`).
 - Command: `python eval/ai_review/run_eval.py --runs 3`
 
 ## Results (fill in from results.json)
