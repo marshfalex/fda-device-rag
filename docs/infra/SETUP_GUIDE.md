@@ -54,7 +54,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519   # skip if you already have one
 ```bash
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars
-# edit: region, compartment_ocid (= tenancy OCID), admin_cidr (= "$(curl -s ifconfig.me)/32")
+# edit: region, compartment_ocid (= tenancy OCID), admin_cidrs (= ["<your-ip>/32"], one per location you work from)
 terraform init
 terraform plan      # review: 1 VCN, 2 subnets, IGW, NAT, 2 route tables, 3 NSGs, 4 VMs, 1 LB
 terraform apply

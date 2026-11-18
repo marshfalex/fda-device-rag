@@ -100,12 +100,13 @@ resource "oci_core_network_security_group" "nodes" {
   display_name   = "nsg-k8s-nodes"
 }
 
-# Bastion: SSH only from the admin's IP.
+# Bastion: SSH only from the admin's IPs (one rule per location).
 resource "oci_core_network_security_group_security_rule" "bastion_ssh_in" {
+  for_each                  = toset(var.admin_cidrs)
   network_security_group_id = oci_core_network_security_group.bastion.id
   direction                 = "INGRESS"
   protocol                  = "6"
-  source                    = var.admin_cidr
+  source                    = each.value
   source_type               = "CIDR_BLOCK"
   tcp_options {
     destination_port_range {

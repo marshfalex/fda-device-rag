@@ -20,9 +20,9 @@ variable "ssh_public_key_path" {
   default     = "~/.ssh/id_ed25519.pub"
 }
 
-variable "admin_cidr" {
-  description = "Your public IP in CIDR form (curl ifconfig.me then append /32). Only this range can SSH to the bastion."
-  type        = string
+variable "admin_cidrs" {
+  description = "Public IPs allowed to SSH to the bastion, in CIDR form (curl ifconfig.me then append /32). One per place you work from, e.g. home and school."
+  type        = list(string)
 }
 
 variable "vcn_cidr" {

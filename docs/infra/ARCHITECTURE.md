@@ -46,7 +46,7 @@ flowchart LR
 
 | NSG | Direction | Source/Dest | Ports | Why |
 |---|---|---|---|---|
-| bastion | in | `admin_cidr` (your /32) | 22 | Only you can SSH in. |
+| bastion | in | `admin_cidrs` (your /32s) | 22 | Only you can SSH in. |
 | lb | in | 0.0.0.0/0 | 80, 443 | The only public entry point for app traffic. |
 | lb | out | nsg-nodes | tcp | The LB forwards to ingress-nginx on the nodes. |
 | nodes | in | nsg-nodes | all | Node-to-node traffic: 9345 (RKE2 supervisor), 6443 (API server), 10250 (kubelet), 2379-2380 (etcd), 8472/udp (Canal VXLAN). |
