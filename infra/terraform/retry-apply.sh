@@ -10,7 +10,16 @@ MAX_ROUNDS="${MAX_ROUNDS:-48}"
 AD_COUNT=$(oci iam availability-domain list --query 'length(data)' --raw-output 2>/dev/null || echo 3)
 
 for round in $(seq 1 "$MAX_ROUNDS"); do
-  for ad in $(seq 1 "$AD_COUNT"); do
+  # Once any node exists, pin to its AD: changing AD would destroy and recreate it.
+  PINNED=$(terraform state list 2>/dev/null | grep -E 'oci_core_instance\.(server|agent)' | head -1)
+  if [ -n "$PINNED" ]; then
+    AD_NAME=$(terraform state show "$PINNED" | grep -m1 'availability_domain' | grep -oE 'AD-[0-9]+')
+    ADS="${AD_NAME#AD-}"
+    echo "Node already exists in $AD_NAME; staying there."
+  else
+    ADS=$(seq 1 "$AD_COUNT")
+  fi
+  for ad in $ADS; do
     echo "=== $(date '+%H:%M:%S') round $round/$MAX_ROUNDS, nodes in AD-$ad ==="
     if terraform apply -auto-approve -input=false -var "nodes_ad_number=$ad" 2>&1 | tee last-apply.log | tail -5; then
       if grep -q "Apply complete" last-apply.log; then
