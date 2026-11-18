@@ -7,7 +7,7 @@ resources:
 images:
   - name: rag-app
     newName: ghcr.io/marshfalex/fda-device-rag
-    newTag: latest
+    newTag: sha-4d3f186
 patches:
   - target: {kind: Ingress, name: rag-app}
     patch: |-
