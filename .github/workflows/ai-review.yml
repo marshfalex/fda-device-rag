@@ -28,7 +28,7 @@ jobs:
           python-version: "3.11"
       - run: pip install "anthropic>=2.10" "requests>=2.31"
       - name: Build diff
-        run: git diff --unified=5 "origin/${{ github.base_ref }}...HEAD" -- . ':(exclude)*.lock' ':(exclude)data/**' > pr.diff
+        run: git diff --unified=5 "origin/${{ github.base_ref }}...HEAD" -- . ':(exclude)*.lock' ':(exclude)data/**' ':(exclude)eval/ai_review/cases/**' > pr.diff
       - name: Review
         env:
           # Uses Claude if ANTHROPIC_API_KEY is set, otherwise Groq's free tier.
