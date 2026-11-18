@@ -1,0 +1,94 @@
+name: Container
+
+# PRs: build (both arches) + Trivy scan, no push.
+# master: build + scan + push multi-arch image to OCIR, then bump the image tag
+#       in the manifests repo -> Argo CD deploys it. Every deploy = a git commit.
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  # GitHub Container Registry: free, needs no extra secrets (uses GITHUB_TOKEN),
+  # and both the local RKE2 cluster and the OCI cluster can pull from it.
+  IMAGE: ghcr.io/marshfalex/fda-device-rag
+
+jobs:
+  build-scan-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      # Single-arch local build for scanning (fast, loadable into the docker daemon).
+      - name: Build amd64 for scan
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: scan:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy scan (fail on fixable CRITICAL/HIGH)
+        run: |
+          TRIVY=mirror.gcr.io/aquasec/trivy:0.57.1
+          for i in 1 2 3; do docker pull "$TRIVY" && break; sleep 10; done
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            "$TRIVY" image --severity CRITICAL,HIGH --ignore-unfixed \
+            --exit-code 1 --format table scan:${{ steps.meta.outputs.tag }}
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build multi-arch (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+
+  bump-manifests:
+    needs: build-scan-push
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Manifests live in deploy/ of this repo by default; set the MANIFESTS_REPO
+      # variable + MANIFESTS_REPO_TOKEN secret to use a separate manifests repo.
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.MANIFESTS_REPO || github.repository }}
+          token: ${{ secrets.MANIFESTS_REPO_TOKEN || github.token }}
+      - name: Set image tag in every overlay
+        run: |
+          TAG=${{ needs.build-scan-push.outputs.tag }}
+          for o in deploy/k8s/overlays/*/; do
+            (cd "$o" && kubectl kustomize . >/dev/null && \
+              sed -i -E "s|(newTag:).*|\1 $TAG|" kustomization.yaml)
+          done
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git commit -am "deploy: rag-app $TAG [skip ci]"
+          git push

@@ -1,0 +1,9 @@
+{
+  "bug_class": "ssrf",
+  "category": "security",
+  "path": "app/preview.py",
+  "lines": [
+    5,
+    6
+  ]
+}

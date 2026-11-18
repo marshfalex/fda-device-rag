@@ -20,6 +20,17 @@ up in [`docs/superpowers/specs/2026-07-28-fda-device-rag-architecture-design.md`
 > GitHub Actions CI (lint + tests on every push/PR — badge above, verified
 > green on real pushes, not just written and assumed) are all live.
 
+## Production-style delivery (OCI + RKE2 + GitOps + AI review)
+
+This app also runs on a production-style platform on Oracle Cloud's Always Free tier:
+
+- **Infrastructure as code.** Terraform in `infra/terraform/` builds a VCN with public and private subnets, an IGW, a NAT gateway, NSGs, a bastion, a flexible LB, and a 3-node RKE2 cluster on Ampere ARM.
+- **Kubernetes.** `deploy/k8s/` holds the Deployment (startup, readiness, and liveness probes, limits), Service, Ingress, HPA, PDB, and default-deny NetworkPolicy.
+- **CI/CD.** On every PR: lint, tests, Gitleaks, Trivy, and a multi-arch image build. On merge, the image goes to OCIR and Argo CD syncs from a separate manifests repo.
+- **AI review gate.** `tools/ai_review/` posts severity-tagged review comments. It **can only comment; a human approves merges.** It is evaluated on seeded-bug PRs in `eval/ai_review/`.
+
+Docs: [architecture](docs/infra/ARCHITECTURE.md) · [step-by-step setup](docs/infra/SETUP_GUIDE.md) · [runbooks](docs/infra/runbooks/) · [AI reviewer eval](docs/ai-review/EVALUATION.md)
+
 ## Corpus
 
 | Source | What it provides | Chunking unit |

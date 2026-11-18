@@ -1,0 +1,9 @@
+{
+  "bug_class": "sql_injection",
+  "category": "security",
+  "path": "app/users.py",
+  "lines": [
+    6,
+    6
+  ]
+}

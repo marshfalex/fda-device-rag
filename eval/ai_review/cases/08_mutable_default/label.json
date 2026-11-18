@@ -1,0 +1,9 @@
+{
+  "bug_class": "mutable_default",
+  "category": "correctness",
+  "path": "app/tags.py",
+  "lines": [
+    1,
+    4
+  ]
+}

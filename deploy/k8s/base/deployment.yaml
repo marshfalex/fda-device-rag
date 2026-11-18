@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-app
+  labels: {app: rag-app}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  selector:
+    matchLabels: {app: rag-app}
+  template:
+    metadata:
+      labels: {app: rag-app}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      imagePullSecrets:
+        - name: ocir-pull
+      containers:
+        - name: app
+          image: rag-app   # rewritten by kustomize `images:` in the overlay
+          ports:
+            - {name: http, containerPort: 8501}
+          resources:
+            requests: {cpu: 250m, memory: 1536Mi}
+            limits: {cpu: "1", memory: 2560Mi}
+          # Cold start downloads the corpus + embedding model; give it time
+          # before liveness can kill it.
+          startupProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /_stcore/health, port: http}
+            periodSeconds: 20
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - name: secrets
+              mountPath: /app/.streamlit
+              readOnly: true
+            - name: hf-cache
+              mountPath: /home/app/.cache
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: secrets
+          secret:
+            secretName: rag-app-secrets   # contains key secrets.toml
+        - name: hf-cache
+          emptyDir: {sizeLimit: 4Gi}
+        - name: tmp
+          emptyDir: {sizeLimit: 2Gi}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app: rag-app}

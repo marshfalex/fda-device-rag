@@ -1,0 +1,9 @@
+{
+  "bug_class": "race_condition",
+  "category": "correctness",
+  "path": "app/inventory.py",
+  "lines": [
+    9,
+    11
+  ]
+}

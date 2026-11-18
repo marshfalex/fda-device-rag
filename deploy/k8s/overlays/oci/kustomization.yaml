@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+# CI updates newTag on every merge to main (see .github/workflows/container.yml).
+# Every deploy is therefore a git commit: `git revert` = rollback.
+images:
+  - name: rag-app
+    newName: ghcr.io/marshfalex/fda-device-rag
+    newTag: latest
+patches:
+  - target: {kind: Ingress, name: rag-app}
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: rag.REPLACE_LB_IP.nip.io

@@ -1,0 +1,15 @@
+.git
+.github
+.devcontainer
+.venv
+venv
+data
+docs
+tests
+infra
+deploy
+eval
+tools
+**/__pycache__
+*.egg-info
+.streamlit/secrets.toml

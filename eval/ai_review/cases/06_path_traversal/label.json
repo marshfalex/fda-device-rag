@@ -1,0 +1,9 @@
+{
+  "bug_class": "path_traversal",
+  "category": "security",
+  "path": "app/files.py",
+  "lines": [
+    7,
+    8
+  ]
+}

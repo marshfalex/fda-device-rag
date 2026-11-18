@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentionally planted fake secrets used to evaluate the AI reviewer"
+paths = ['''eval/ai_review/cases/.*''']

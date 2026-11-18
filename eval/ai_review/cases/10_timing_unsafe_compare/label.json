@@ -1,0 +1,9 @@
+{
+  "bug_class": "timing_unsafe_compare",
+  "category": "security",
+  "path": "app/webhooks.py",
+  "lines": [
+    9,
+    9
+  ]
+}

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-app
+spec:
+  selector: {app: rag-app}
+  ports:
+    - {name: http, port: 80, targetPort: http}
